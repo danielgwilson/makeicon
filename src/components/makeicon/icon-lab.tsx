@@ -53,6 +53,27 @@ type LoadedSource = {
 
 type ZipFile = { path: string; bytes: Uint8Array };
 
+const PACK_ACCENT: Partial<Record<MakeIconPackId, string>> = {
+  slack_emoji: "group-hover:text-[#4A154B]",
+  discord_emoji: "group-hover:text-[#5865F2]",
+  notion_icon: "group-hover:text-foreground",
+  figma_widget: "group-hover:text-[#F24E1E]",
+  vercel_integration: "group-hover:text-foreground",
+  github_social_preview: "group-hover:text-foreground",
+  chrome_extension: "group-hover:text-[#4285F4]",
+  firefox_addon: "group-hover:text-[#FF7139]",
+  vscode_extension: "group-hover:text-[#007ACC]",
+  windows_tiles: "group-hover:text-[#0078D4]",
+  android_app_icons: "group-hover:text-[#3DDC84]",
+  ios_app_iconset: "group-hover:text-foreground",
+  nextjs_app_router: "group-hover:text-foreground",
+  web_favicon_pwa: "group-hover:text-foreground",
+};
+
+function packAccent(packId: MakeIconPackId) {
+  return PACK_ACCENT[packId] ?? "group-hover:text-foreground";
+}
+
 function downloadBlob(blob: Blob, filename: string) {
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -259,8 +280,11 @@ function packTitle(pack: MakeIconPackSpec) {
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 items-start gap-3">
-        <div className="mt-0.5 grid size-9 place-items-center rounded-xl border border-border bg-background text-foreground transition group-hover:scale-[1.03] group-hover:bg-background/80">
-          <PackIcon packId={pack.id} className="opacity-90" />
+        <div className="mt-0.5 grid size-9 place-items-center rounded-xl border border-border bg-background text-muted-foreground transition group-hover:scale-[1.03] group-hover:bg-background/80">
+          <PackIcon
+            packId={pack.id}
+            className={cn("transition", packAccent(pack.id))}
+          />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="font-[family-name:var(--font-display)] text-[15px] leading-5 tracking-tight text-foreground">
