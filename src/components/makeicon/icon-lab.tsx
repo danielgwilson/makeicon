@@ -8,6 +8,7 @@ import {
   ClipboardPaste,
   Download,
   Link2,
+  Loader2,
   RotateCcw,
   Sparkles,
   Upload,
@@ -22,6 +23,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
+import { PackIcon } from "@/components/makeicon/pack-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -256,7 +258,10 @@ async function buildZip(files: ZipFile[]) {
 function packTitle(pack: MakeIconPackSpec) {
   return (
     <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="mt-0.5 grid size-9 place-items-center rounded-xl border border-border bg-background text-foreground transition group-hover:scale-[1.03] group-hover:bg-background/80">
+          <PackIcon packId={pack.id} className="opacity-90" />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="font-[family-name:var(--font-display)] text-[15px] leading-5 tracking-tight text-foreground">
             {pack.name}
@@ -271,7 +276,7 @@ function packTitle(pack: MakeIconPackSpec) {
           {pack.summary}
         </div>
       </div>
-      <ArrowRight className="mt-0.5 size-4 text-muted-foreground" />
+      <ArrowRight className="mt-1 size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground/80" />
     </div>
   );
 }
@@ -279,9 +284,11 @@ function packTitle(pack: MakeIconPackSpec) {
 export function IconLab() {
   const id = useId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const dragDepthRef = useRef(0);
 
   const [source, setSource] = useState<LoadedSource | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [fit, setFit] = useState<FitMode>("contain");
   const [paddingRatio, setPaddingRatio] = useState(0.08);
@@ -421,11 +428,25 @@ export function IconLab() {
     async (event: React.DragEvent) => {
       event.preventDefault();
       event.stopPropagation();
+      dragDepthRef.current = 0;
+      setIsDragging(false);
       const files = event.dataTransfer.files;
       if (files?.length) await onFiles(files);
     },
     [onFiles],
   );
+
+  const onDragEnterRoot = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    dragDepthRef.current += 1;
+    setIsDragging(true);
+  }, []);
+
+  const onDragLeaveRoot = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsDragging(false);
+  }, []);
 
   const onPaste = useCallback(
     async (event: ClipboardEvent) => {
@@ -553,18 +574,17 @@ export function IconLab() {
       role="application"
       aria-label="MakeIcon"
       tabIndex={-1}
-      className={cn(
-        "min-h-screen bg-[radial-gradient(1200px_800px_at_15%_10%,hsl(33_100%_93%),transparent_55%),radial-gradient(900px_700px_at_80%_15%,hsl(190_95%_90%),transparent_55%),radial-gradient(900px_700px_at_50%_90%,hsl(270_90%_96%),transparent_55%)]",
-        "text-foreground",
-      )}
+      className="min-h-[var(--viewport-height)] bg-background text-foreground"
       onDragOver={(e) => e.preventDefault()}
+      onDragEnter={onDragEnterRoot}
+      onDragLeave={onDragLeaveRoot}
       onDrop={onDrop}
     >
-      <div className="pointer-events-none fixed inset-0 opacity-[0.18] [background-image:linear-gradient(to_right,rgba(0,0,0,0.09)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.09)_1px,transparent_1px)] [background-size:36px_36px]" />
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-24 bg-gradient-to-b from-foreground/[0.06] to-transparent" />
 
-      <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-6 pt-10 pb-8">
+      <header className="container relative flex items-center justify-between pt-10 pb-8">
         <div className="flex items-center gap-3">
-          <div className="grid size-10 place-items-center rounded-2xl bg-black text-white shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
+          <div className="grid size-10 place-items-center rounded-2xl bg-foreground text-background shadow-[0_14px_60px_hsl(var(--foreground)/0.16)]">
             <Sparkles className="size-5" />
           </div>
           <div className="leading-none">
@@ -572,7 +592,7 @@ export function IconLab() {
               makeicon
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
-              Drop an image → get the exact icons you need.
+              Drop an image → download the exact icons you need.
             </div>
           </div>
         </div>
@@ -598,10 +618,10 @@ export function IconLab() {
         </div>
       </header>
 
-      <main className="relative mx-auto w-full max-w-6xl px-6 pb-24">
+      <main className="container relative pb-24">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <Card className="overflow-hidden border-black/10 bg-white/70 p-0 shadow-[0_30px_120px_rgba(0,0,0,0.10)] backdrop-blur">
-            <div className="border-b border-black/10 bg-white/60 px-5 py-4">
+          <Card className="overflow-hidden border-border bg-card p-0 shadow-[0_20px_80px_hsl(var(--foreground)/0.08)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
+            <div className="border-b border-border bg-card px-5 py-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="min-w-0">
                   <div className="font-[family-name:var(--font-display)] text-lg tracking-tight">
@@ -668,13 +688,16 @@ export function IconLab() {
                   <div
                     className={cn(
                       "group relative grid min-h-[280px] place-items-center overflow-hidden rounded-2xl border border-dashed",
-                      "border-black/15 bg-[radial-gradient(700px_350px_at_20%_20%,rgba(0,0,0,0.05),transparent_70%)]",
-                      "shadow-inner shadow-black/5",
+                      "border-border/70 bg-muted/30 transition",
+                      isDragging
+                        ? "border-foreground/40 bg-muted/50 shadow-[0_0_0_6px_hsl(var(--foreground)/0.05)]"
+                        : "hover:border-foreground/25",
+                      "shadow-inner shadow-foreground/5",
                     )}
                   >
                     {!source ? (
                       <div className="mx-auto flex max-w-lg flex-col items-center px-8 text-center">
-                        <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-black text-white shadow-[0_20px_70px_rgba(0,0,0,0.18)]">
+                        <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-foreground text-background shadow-[0_20px_70px_hsl(var(--foreground)/0.16)] transition group-hover:scale-[1.03]">
                           <Upload className="size-6" />
                         </div>
                         <div className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
@@ -690,6 +713,9 @@ export function IconLab() {
                             disabled={isLoading}
                             className="rounded-full"
                           >
+                            {isLoading ? (
+                              <Loader2 className="mr-2 size-4 animate-spin" />
+                            ) : null}
                             Choose file
                             <ArrowRight className="ml-2 size-4" />
                           </Button>
@@ -706,8 +732,7 @@ export function IconLab() {
                     ) : (
                       <div className="relative w-full">
                         <div className="grid gap-4 p-4 sm:grid-cols-[1fr_220px] sm:items-start">
-                          <div className="relative overflow-hidden rounded-xl border border-black/10 bg-white">
-                            <div className="absolute inset-0 [background-image:linear-gradient(45deg,rgba(0,0,0,0.05)_25%,transparent_25%,transparent_50%,rgba(0,0,0,0.05)_50%,rgba(0,0,0,0.05)_75%,transparent_75%,transparent)] [background-size:18px_18px] opacity-60" />
+                          <div className="bg-checkerboard relative overflow-hidden rounded-xl border border-border">
                             <div className="relative flex items-center justify-center p-4">
                               <Image
                                 src={source.objectUrl}
@@ -721,7 +746,7 @@ export function IconLab() {
                             </div>
                           </div>
 
-                          <div className="grid gap-3 rounded-xl border border-black/10 bg-white/70 p-3">
+                          <div className="grid gap-3 rounded-xl border border-border bg-card p-3">
                             <div className="text-xs font-medium text-muted-foreground">
                               Framing
                             </div>
@@ -765,7 +790,7 @@ export function IconLab() {
                                   onChange={(e) =>
                                     setPaddingRatio(Number(e.target.value))
                                   }
-                                  className="w-full accent-black"
+                                  className="w-full accent-foreground"
                                 />
                               </div>
                               <div className="grid gap-1.5">
@@ -796,8 +821,8 @@ export function IconLab() {
             </div>
           </Card>
 
-          <Card className="overflow-hidden border-black/10 bg-white/70 p-0 shadow-[0_30px_120px_rgba(0,0,0,0.10)] backdrop-blur">
-            <div className="border-b border-black/10 bg-white/60 px-5 py-4">
+          <Card className="overflow-hidden border-border bg-card p-0 shadow-[0_20px_80px_hsl(var(--foreground)/0.08)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:delay-150">
+            <div className="border-b border-border bg-card px-5 py-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="font-[family-name:var(--font-display)] text-lg tracking-tight">
@@ -826,7 +851,7 @@ export function IconLab() {
 
             <div className="p-5">
               {source ? (
-                <div className="mb-5 grid gap-2 rounded-2xl border border-black/10 bg-white/60 p-4">
+                <div className="mb-5 grid gap-2 rounded-2xl border border-border bg-muted/30 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Included
@@ -889,10 +914,11 @@ export function IconLab() {
                                 key={pack.id}
                                 type="button"
                                 className={cn(
-                                  "w-full rounded-2xl border p-4 text-left transition",
+                                  "group w-full rounded-2xl border p-4 text-left transition",
+                                  "hover:-translate-y-0.5 hover:shadow-[0_18px_70px_hsl(var(--foreground)/0.10)] active:translate-y-0",
                                   isOn
-                                    ? "border-black/20 bg-black/[0.03] shadow-[0_14px_50px_rgba(0,0,0,0.08)]"
-                                    : "border-black/10 bg-white/60 hover:border-black/18 hover:bg-white/80",
+                                    ? "border-foreground/20 bg-foreground/[0.03]"
+                                    : "border-border bg-card hover:border-foreground/18",
                                 )}
                                 onClick={() =>
                                   setSelected((prev) => ({
@@ -933,8 +959,8 @@ export function IconLab() {
                       </div>
                       <div className="mt-1">
                         Exports are generated locally in your browser (no
-                        upload). If a URL is CORS-protected, download the image
-                        and drop it instead.
+                        upload). URL imports try a direct fetch first, then fall
+                        back to a safe proxy if CORS blocks it.
                       </div>
                     </div>
                     <div>
@@ -963,14 +989,17 @@ export function IconLab() {
           </Card>
         </div>
 
-        <footer className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-black/10 pt-8 text-sm text-muted-foreground md:flex-row md:items-center">
+        <footer className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-border pt-8 text-sm text-muted-foreground md:flex-row md:items-center">
           <div>
             <span className="font-medium text-foreground">makeicon.dev</span> —
             fast, picky, and designed for real deployment oddities.
+            <div className="mt-1 text-xs">
+              Logos are trademarks of their respective owners.
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <a
-              className="underline decoration-black/20 underline-offset-4 hover:text-foreground"
+              className="underline decoration-border underline-offset-4 hover:text-foreground"
               href="https://github.com/danielgwilson/makeicon"
               target="_blank"
               rel="noreferrer"
@@ -978,7 +1007,7 @@ export function IconLab() {
               GitHub
             </a>
             <a
-              className="underline decoration-black/20 underline-offset-4 hover:text-foreground"
+              className="underline decoration-border underline-offset-4 hover:text-foreground"
               href="https://vercel.com/dgwto/makeicon"
               target="_blank"
               rel="noreferrer"

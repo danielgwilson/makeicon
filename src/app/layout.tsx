@@ -1,8 +1,13 @@
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
-import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import {
+  Bricolage_Grotesque,
+  IBM_Plex_Mono,
+  IBM_Plex_Sans,
+} from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 const sans = IBM_Plex_Sans({
@@ -17,10 +22,9 @@ const mono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
 });
 
-const display = Fraunces({
+const display = Bricolage_Grotesque({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -40,8 +44,10 @@ export default function RootLayout({
       <body
         className={`${sans.variable} ${mono.variable} ${display.variable} antialiased`}
       >
-        {children}
-        <Toaster richColors />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {children}
+          <Toaster richColors position="top-center" />
+        </ThemeProvider>
         <Analytics />
         <SpeedInsights />
       </body>
