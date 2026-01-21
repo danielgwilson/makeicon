@@ -143,6 +143,35 @@ async function loadImageFromUrl(url: string): Promise<LoadedSource> {
   return loadImageFromBlob(blob, name);
 }
 
+async function loadImageFromUrlViaProxy(url: string): Promise<LoadedSource> {
+  const parsed = new URL(url);
+  const name = parsed.pathname.split("/").pop() || "image";
+
+  const response = await fetch(
+    `/api/image-proxy?url=${encodeURIComponent(url)}`,
+  );
+  if (!response.ok) {
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const json = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      throw new Error(
+        json?.error
+          ? `Proxy: ${json.error}`
+          : `Proxy error (${response.status}).`,
+      );
+    }
+    const text = await response.text().catch(() => "");
+    throw new Error(
+      text ? `Proxy: ${text}` : `Proxy error (${response.status}).`,
+    );
+  }
+
+  const blob = await response.blob();
+  return loadImageFromBlob(blob, name);
+}
+
 async function rasterize({
   source,
   width,
@@ -377,11 +406,19 @@ export function IconLab() {
       setNewSource(loaded);
       toast.success("Loaded from URL.");
     } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? `${err.message} If this is a CORS-protected URL, download the file and drop it here.`
-          : "Failed to load URL.",
-      );
+      try {
+        const loaded = await loadImageFromUrlViaProxy(value);
+        setNewSource(loaded);
+        toast.success("Loaded from URL (via proxy).");
+      } catch (proxyErr) {
+        toast.error(
+          proxyErr instanceof Error
+            ? proxyErr.message
+            : err instanceof Error
+              ? err.message
+              : "Failed to load URL.",
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -397,6 +434,7 @@ export function IconLab() {
     setIsLoading(true);
     try {
       const files: ZipFile[] = [];
+      const warnings: string[] = [];
 
       const multi = selectedPacks.length > 1;
       for (const pack of selectedPacks) {
@@ -409,7 +447,8 @@ export function IconLab() {
           paddingRatio,
           background,
         });
-        files.push(...generated);
+        files.push(...generated.files);
+        warnings.push(...generated.warnings);
       }
 
       const zip = await buildZip(files);
@@ -417,6 +456,14 @@ export function IconLab() {
       const name = safeBaseName(source.name || "image");
       downloadBlob(zip, `makeicon-${name}-${stamp}.zip`);
       toast.success("ZIP downloaded.");
+      if (warnings.length) {
+        toast.message(`Heads up: ${warnings[0]}`, {
+          description:
+            warnings.length > 1
+              ? `${warnings.length - 1} more warnings…`
+              : undefined,
+        });
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Export failed.");
     } finally {
@@ -841,6 +888,7 @@ async function generatePackFiles({
   background: string | null;
 }) {
   const files: ZipFile[] = [];
+  const warnings: string[] = [];
 
   for (const output of pack.outputs) {
     if (output.kind === "text") {
@@ -861,6 +909,11 @@ async function generatePackFiles({
         background: output.background ?? background,
         format: output.format,
       });
+      if (output.warnOverBytes && blob.size > output.warnOverBytes) {
+        warnings.push(
+          `${output.path} is ${Math.round(blob.size / 1024)}KB (limit ~${Math.round(output.warnOverBytes / 1024)}KB)`,
+        );
+      }
       files.push({
         path: `${baseDir}${output.path}`,
         bytes: await blobToBytes(blob),
@@ -884,6 +937,11 @@ async function generatePackFiles({
         );
       }
       const icoBlob = await buildIcoFromPngs(pngs);
+      if (output.warnOverBytes && icoBlob.size > output.warnOverBytes) {
+        warnings.push(
+          `${output.path} is ${Math.round(icoBlob.size / 1024)}KB (limit ~${Math.round(output.warnOverBytes / 1024)}KB)`,
+        );
+      }
       files.push({
         path: `${baseDir}${output.path}`,
         bytes: await blobToBytes(icoBlob),
@@ -891,5 +949,5 @@ async function generatePackFiles({
     }
   }
 
-  return files;
+  return { files, warnings };
 }

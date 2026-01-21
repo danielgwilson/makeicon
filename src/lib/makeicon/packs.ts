@@ -3,7 +3,12 @@ export type MakeIconPackId =
   | "nextjs_app_router"
   | "chrome_extension"
   | "slack_emoji"
-  | "discord_emoji";
+  | "discord_emoji"
+  | "windows_tiles"
+  | "vercel_integration"
+  | "notion_icon"
+  | "figma_widget"
+  | "github_social_preview";
 
 export type PackSelection = Record<MakeIconPackId, boolean>;
 
@@ -16,6 +21,7 @@ export type RasterOutput = {
   fit?: "contain" | "cover";
   paddingRatio?: number;
   background?: string | null;
+  warnOverBytes?: number;
 };
 
 export type IcoOutput = {
@@ -24,6 +30,7 @@ export type IcoOutput = {
   sizes: number[];
   paddingRatio?: number;
   background?: string | null;
+  warnOverBytes?: number;
 };
 
 export type TextOutput = { kind: "text"; path: string; content: string };
@@ -271,6 +278,7 @@ export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
         width: 128,
         height: 128,
         format: "png",
+        warnOverBytes: 128 * 1024,
       },
       {
         kind: "text",
@@ -294,12 +302,154 @@ export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
         width: 128,
         height: 128,
         format: "png",
+        warnOverBytes: 256 * 1024,
       },
       {
         kind: "text",
         path: "discord/README.txt",
         content:
           "Discord custom emoji: keep it square, 128×128, and under the per-emoji file-size limit.\n",
+      },
+    ],
+  },
+
+  windows_tiles: {
+    id: "windows_tiles",
+    name: "Windows (PWA tiles)",
+    summary:
+      "Tile images commonly referenced by Windows PWA manifest fields + browserconfig.",
+    filesSummary: "Square + wide tiles (PNG)",
+    badges: ["PWA"],
+    outputs: [
+      {
+        kind: "raster",
+        path: "windows/Square44x44Logo.png",
+        width: 44,
+        height: 44,
+        format: "png",
+      },
+      {
+        kind: "raster",
+        path: "windows/Square71x71Logo.png",
+        width: 71,
+        height: 71,
+        format: "png",
+      },
+      {
+        kind: "raster",
+        path: "windows/Square150x150Logo.png",
+        width: 150,
+        height: 150,
+        format: "png",
+      },
+      {
+        kind: "raster",
+        path: "windows/Square310x310Logo.png",
+        width: 310,
+        height: 310,
+        format: "png",
+      },
+      {
+        kind: "raster",
+        path: "windows/Wide310x150Logo.png",
+        width: 310,
+        height: 150,
+        format: "png",
+        fit: "cover",
+        paddingRatio: 0,
+      },
+      {
+        kind: "text",
+        path: "windows/browserconfig.xml",
+        content:
+          `<?xml version="1.0" encoding="utf-8"?>\n` +
+          `<browserconfig>\n` +
+          `  <msapplication>\n` +
+          `    <tile>\n` +
+          `      <square70x70logo src="/windows/Square71x71Logo.png"/>\n` +
+          `      <square150x150logo src="/windows/Square150x150Logo.png"/>\n` +
+          `      <wide310x150logo src="/windows/Wide310x150Logo.png"/>\n` +
+          `      <square310x310logo src="/windows/Square310x310Logo.png"/>\n` +
+          `      <TileColor>#ffffff</TileColor>\n` +
+          `    </tile>\n` +
+          `  </msapplication>\n` +
+          `</browserconfig>\n`,
+      },
+    ],
+  },
+
+  vercel_integration: {
+    id: "vercel_integration",
+    name: "Vercel Integration logo",
+    summary:
+      "Non-transparent PNG logo for Marketplace integrations (minimum 256×256).",
+    filesSummary: "512 PNG (opaque)",
+    badges: ["Marketplace"],
+    outputs: [
+      {
+        kind: "raster",
+        path: "vercel/integration-logo-512.png",
+        width: 512,
+        height: 512,
+        format: "png",
+        background: "#ffffff",
+        paddingRatio: 0.1,
+      },
+    ],
+  },
+
+  notion_icon: {
+    id: "notion_icon",
+    name: "Notion page icon",
+    summary: "Notion recommends 280×280 for custom icons.",
+    filesSummary: "280 PNG",
+    badges: ["docs"],
+    outputs: [
+      {
+        kind: "raster",
+        path: "notion/icon-280.png",
+        width: 280,
+        height: 280,
+        format: "png",
+        paddingRatio: 0.08,
+      },
+    ],
+  },
+
+  figma_widget: {
+    id: "figma_widget",
+    name: "Figma widget icon",
+    summary: "Widget icon size for publishing.",
+    filesSummary: "128 PNG",
+    badges: ["design"],
+    outputs: [
+      {
+        kind: "raster",
+        path: "figma/widget-icon-128.png",
+        width: 128,
+        height: 128,
+        format: "png",
+        paddingRatio: 0.08,
+      },
+    ],
+  },
+
+  github_social_preview: {
+    id: "github_social_preview",
+    name: "GitHub social preview",
+    summary: "Social preview (Open Graph) for a repo: 1280×640.",
+    filesSummary: "1280×640 PNG",
+    badges: ["OG"],
+    outputs: [
+      {
+        kind: "raster",
+        path: "github/social-preview-1280x640.png",
+        width: 1280,
+        height: 640,
+        format: "png",
+        fit: "cover",
+        background: "#ffffff",
+        paddingRatio: 0,
       },
     ],
   },
@@ -311,4 +461,9 @@ export const DEFAULT_PACKS: PackSelection = {
   chrome_extension: false,
   slack_emoji: false,
   discord_emoji: false,
+  windows_tiles: false,
+  vercel_integration: false,
+  notion_icon: false,
+  figma_widget: false,
+  github_social_preview: false,
 };
