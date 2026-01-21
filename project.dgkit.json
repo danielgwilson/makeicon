@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "name": "makeicon",
+  "template": "next-app+shadcn",
+  "modules": [],
+  "createdAt": "2026-01-21T07:28:25.984Z",
+  "scaffold": {
+    "tests": true
+  },
+  "links": {}
+}
