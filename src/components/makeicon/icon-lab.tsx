@@ -599,7 +599,7 @@ export function IconLab() {
       role="application"
       aria-label="MakeIcon"
       tabIndex={-1}
-      className="min-h-[var(--viewport-height)] bg-background text-foreground"
+      className="min-h-[var(--viewport-height)] overflow-x-hidden bg-background text-foreground"
       onDragOver={(e) => e.preventDefault()}
       onDragEnter={onDragEnterRoot}
       onDragLeave={onDragLeaveRoot}
@@ -608,12 +608,12 @@ export function IconLab() {
       <NoiseField className="pointer-events-none fixed inset-0 z-0" />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-24 bg-gradient-to-b from-foreground/[0.06] to-transparent" />
 
-      <header className="container relative z-10 flex items-center justify-between pt-10 pb-8">
-        <div className="flex items-center gap-3">
+      <header className="container relative z-10 flex flex-col gap-4 pt-10 pb-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="grid size-10 place-items-center rounded-2xl bg-foreground text-background shadow-[0_14px_60px_hsl(var(--foreground)/0.16)]">
             <Sparkles className="size-5" />
           </div>
-          <div className="leading-none">
+          <div className="min-w-0 leading-none">
             <div className="font-[family-name:var(--font-display)] text-[20px] tracking-tight">
               makeicon
             </div>
@@ -622,7 +622,7 @@ export function IconLab() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="secondary"
             className="rounded-full"
@@ -909,8 +909,8 @@ export function IconLab() {
                 </TabsList>
 
                 <TabsContent value="packs" className="mt-4">
-                  <div className="grid gap-3">
-                    <div className="grid gap-2">
+                  <div className="grid min-w-0 gap-3">
+                    <div className="grid min-w-0 gap-2">
                       <Label
                         htmlFor={`${id}-pack-search`}
                         className="text-xs text-muted-foreground"
@@ -929,7 +929,7 @@ export function IconLab() {
                       const packs = packsByCategory.get(category) ?? [];
                       if (!packs.length) return null;
                       return (
-                        <div key={category} className="grid gap-3">
+                        <div key={category} className="grid min-w-0 gap-3">
                           <div className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                             {category}
                           </div>
@@ -940,7 +940,7 @@ export function IconLab() {
                                 key={pack.id}
                                 type="button"
                                 className={cn(
-                                  "group w-full rounded-2xl border p-4 text-left transition",
+                                  "group w-full min-w-0 rounded-2xl border p-4 text-left transition",
                                   "hover:-translate-y-0.5 hover:shadow-[0_18px_70px_hsl(var(--foreground)/0.10)] active:translate-y-0",
                                   isOn
                                     ? "border-foreground/20 bg-foreground/[0.03]"
