@@ -37,6 +37,11 @@ Next.js supports “special files” under `src/app/` (e.g. `icon.png`, `apple-i
 Chrome extension manifest icons commonly use `16`, `32`, `48`, `128` sizes.  
 Source: https://developer.chrome.com/docs/extensions/develop/ui/icons
 
+### Firefox add-on icons
+
+Firefox add-ons commonly provide `48×48` and `96×96` icons in the manifest.  
+Source: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/icons
+
 ---
 
 ## Chat / community
@@ -83,3 +88,25 @@ Source: https://www.notion.so/help/customize-your-content
 Figma widget publishing icon size: **128×128**.  
 Source: https://help.figma.com/hc/en-us/articles/360039115914-Publish-widgets-to-the-Figma-Community
 
+---
+
+## Editors / IDEs
+
+### VS Code extension icon
+
+VS Code extension manifest supports an `icon` field for the Marketplace listing.  
+Source: https://code.visualstudio.com/api/references/extension-manifest#icon
+
+---
+
+## Native apps (starter coverage)
+
+### iOS App Store icon
+
+Apple App Store icon is **1024×1024**.  
+Source: https://developer.apple.com/design/human-interface-guidelines/app-icons
+
+### Android app icons
+
+Android adaptive icons generally use separate foreground/background layers; single-image workflows can still generate “legacy” launcher mipmaps plus a Play Store icon.  
+Source: https://developer.android.com/develop/ui/views/launch/icon_design_adaptive

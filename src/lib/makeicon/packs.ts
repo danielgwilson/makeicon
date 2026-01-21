@@ -4,6 +4,10 @@ export type MakeIconPackId =
   | "chrome_extension"
   | "slack_emoji"
   | "discord_emoji"
+  | "firefox_addon"
+  | "vscode_extension"
+  | "ios_app_iconset"
+  | "android_app_icons"
   | "windows_tiles"
   | "vercel_integration"
   | "notion_icon"
@@ -39,10 +43,20 @@ export type MakeIconOutput = RasterOutput | IcoOutput | TextOutput;
 
 export type MakeIconPackSpec = {
   id: MakeIconPackId;
+  category:
+    | "Web"
+    | "Frameworks"
+    | "Extensions"
+    | "Chat"
+    | "Native"
+    | "Dev Platforms"
+    | "Docs"
+    | "Design";
   name: string;
   summary: string;
   filesSummary: string;
   badges?: string[];
+  keywords?: string[];
   outputs: MakeIconOutput[];
 };
 
@@ -104,10 +118,20 @@ export const metadata = {
 export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
   web_favicon_pwa: {
     id: "web_favicon_pwa",
+    category: "Web",
     name: "Web (favicon + PWA)",
     summary: "Favicons, Apple touch icon, Android/PWA icons + manifest.",
     filesSummary: "ICO + PNG + webmanifest",
     badges: ["default"],
+    keywords: [
+      "favicon",
+      "pwa",
+      "manifest",
+      "maskable",
+      "apple",
+      "android",
+      "ico",
+    ],
     outputs: [
       { kind: "ico", path: "favicon.ico", sizes: [16, 32, 48, 64, 128, 256] },
       {
@@ -181,11 +205,13 @@ export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
 
   nextjs_app_router: {
     id: "nextjs_app_router",
+    category: "Frameworks",
     name: "Next.js (App Router files)",
     summary:
       "Drop-in special files for src/app/: icon.png, apple-icon.png, favicon.ico.",
     filesSummary: "Next.js special files",
     badges: ["drop-in"],
+    keywords: ["next", "nextjs", "vercel", "app router", "src/app"],
     outputs: [
       {
         kind: "ico",
@@ -212,11 +238,13 @@ export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
 
   chrome_extension: {
     id: "chrome_extension",
+    category: "Extensions",
     name: "Chrome extension",
     summary:
       "Icon sizes commonly required by Chrome extensions + manifest snippet.",
     filesSummary: "16/32/48/128 PNG + snippet",
     badges: ["MV3"],
+    keywords: ["chrome", "extension", "manifest"],
     outputs: [
       {
         kind: "raster",
@@ -267,10 +295,12 @@ export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
 
   slack_emoji: {
     id: "slack_emoji",
+    category: "Chat",
     name: "Slack emoji",
     summary: "Static emoji exports (Slack recommends 128×128 under 128KB).",
     filesSummary: "128 PNG + naming note",
     badges: ["tiny"],
+    keywords: ["slack", "emoji"],
     outputs: [
       {
         kind: "raster",
@@ -290,11 +320,13 @@ export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
 
   discord_emoji: {
     id: "discord_emoji",
+    category: "Chat",
     name: "Discord emoji",
     summary:
       "Static emoji exports (typically 128×128; Discord file limit is tight).",
     filesSummary: "128 PNG + naming note",
     badges: ["tiny"],
+    keywords: ["discord", "emoji"],
     outputs: [
       {
         kind: "raster",
@@ -313,13 +345,127 @@ export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
     ],
   },
 
+  firefox_addon: {
+    id: "firefox_addon",
+    category: "Extensions",
+    name: "Firefox add-on",
+    summary: "Firefox extension icons + manifest snippet.",
+    filesSummary: "48/96 PNG + snippet",
+    badges: ["WebExtension"],
+    keywords: ["firefox", "addon", "extension", "manifest"],
+    outputs: [
+      {
+        kind: "raster",
+        path: "firefox/icon-48.png",
+        width: 48,
+        height: 48,
+        format: "png",
+      },
+      {
+        kind: "raster",
+        path: "firefox/icon-96.png",
+        width: 96,
+        height: 96,
+        format: "png",
+      },
+      {
+        kind: "text",
+        path: "firefox/manifest-icons-snippet.json",
+        content: JSON.stringify(
+          {
+            icons: {
+              "48": "firefox/icon-48.png",
+              "96": "firefox/icon-96.png",
+            },
+          },
+          null,
+          2,
+        ),
+      },
+    ],
+  },
+
+  vscode_extension: {
+    id: "vscode_extension",
+    category: "Dev Platforms",
+    name: "VS Code extension",
+    summary: "Marketplace icon (128×128) + manifest snippet.",
+    filesSummary: "128 PNG + snippet",
+    badges: ["Marketplace"],
+    keywords: ["vscode", "extension", "marketplace"],
+    outputs: [
+      {
+        kind: "raster",
+        path: "vscode/icon-128.png",
+        width: 128,
+        height: 128,
+        format: "png",
+      },
+      {
+        kind: "text",
+        path: "vscode/package-json-snippet.json",
+        content: JSON.stringify(
+          {
+            icon: "vscode/icon-128.png",
+          },
+          null,
+          2,
+        ),
+      },
+    ],
+  },
+
+  ios_app_iconset: {
+    id: "ios_app_iconset",
+    category: "Native",
+    name: "iOS AppIcon.appiconset",
+    summary: "Drop-in Xcode AppIcon.appiconset (iPhone + iPad + App Store).",
+    filesSummary: "PNG set + Contents.json",
+    badges: ["Xcode"],
+    keywords: ["ios", "xcode", "appicon", "app store", "assets"],
+    outputs: buildIosAppIconsetOutputs(),
+  },
+
+  android_app_icons: {
+    id: "android_app_icons",
+    category: "Native",
+    name: "Android launcher icons (legacy + Play Store)",
+    summary: "Mipmap icons + Play Store 512px (single-image workflow).",
+    filesSummary: "mipmap-* + 512",
+    badges: ["Android"],
+    keywords: ["android", "play store", "mipmap", "launcher"],
+    outputs: [
+      {
+        kind: "raster",
+        path: "android/playstore-512.png",
+        width: 512,
+        height: 512,
+        format: "png",
+        paddingRatio: 0.08,
+      },
+      ...androidMipmap("mipmap-mdpi", 48),
+      ...androidMipmap("mipmap-hdpi", 72),
+      ...androidMipmap("mipmap-xhdpi", 96),
+      ...androidMipmap("mipmap-xxhdpi", 144),
+      ...androidMipmap("mipmap-xxxhdpi", 192),
+      {
+        kind: "text",
+        path: "android/README.txt",
+        content:
+          "These are legacy launcher icons derived from a single image. Modern adaptive icons usually require separate foreground/background layers.\n",
+      },
+    ],
+  },
+
   windows_tiles: {
     id: "windows_tiles",
+    category: "Web",
     name: "Windows (PWA tiles)",
     summary:
       "Tile images commonly referenced by Windows PWA manifest fields + browserconfig.",
     filesSummary: "Square + wide tiles (PNG)",
     badges: ["PWA"],
+    keywords: ["windows", "tile", "pwa", "browserconfig"],
     outputs: [
       {
         kind: "raster",
@@ -380,11 +526,13 @@ export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
 
   vercel_integration: {
     id: "vercel_integration",
+    category: "Dev Platforms",
     name: "Vercel Integration logo",
     summary:
       "Non-transparent PNG logo for Marketplace integrations (minimum 256×256).",
     filesSummary: "512 PNG (opaque)",
     badges: ["Marketplace"],
+    keywords: ["vercel", "integration", "marketplace", "logo"],
     outputs: [
       {
         kind: "raster",
@@ -400,10 +548,12 @@ export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
 
   notion_icon: {
     id: "notion_icon",
+    category: "Docs",
     name: "Notion page icon",
     summary: "Notion recommends 280×280 for custom icons.",
     filesSummary: "280 PNG",
     badges: ["docs"],
+    keywords: ["notion", "icon"],
     outputs: [
       {
         kind: "raster",
@@ -418,10 +568,12 @@ export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
 
   figma_widget: {
     id: "figma_widget",
+    category: "Design",
     name: "Figma widget icon",
     summary: "Widget icon size for publishing.",
     filesSummary: "128 PNG",
     badges: ["design"],
+    keywords: ["figma", "widget", "community"],
     outputs: [
       {
         kind: "raster",
@@ -436,10 +588,12 @@ export const PACKS: Record<MakeIconPackId, MakeIconPackSpec> = {
 
   github_social_preview: {
     id: "github_social_preview",
+    category: "Dev Platforms",
     name: "GitHub social preview",
     summary: "Social preview (Open Graph) for a repo: 1280×640.",
     filesSummary: "1280×640 PNG",
     badges: ["OG"],
+    keywords: ["github", "open graph", "social", "og"],
     outputs: [
       {
         kind: "raster",
@@ -461,9 +615,215 @@ export const DEFAULT_PACKS: PackSelection = {
   chrome_extension: false,
   slack_emoji: false,
   discord_emoji: false,
+  firefox_addon: false,
+  vscode_extension: false,
+  ios_app_iconset: false,
+  android_app_icons: false,
   windows_tiles: false,
   vercel_integration: false,
   notion_icon: false,
   figma_widget: false,
   github_social_preview: false,
 };
+
+function androidMipmap(dir: string, size: number): RasterOutput[] {
+  return [
+    {
+      kind: "raster",
+      path: `android/${dir}/ic_launcher.png`,
+      width: size,
+      height: size,
+      format: "png",
+      paddingRatio: 0.08,
+    },
+    {
+      kind: "raster",
+      path: `android/${dir}/ic_launcher_round.png`,
+      width: size,
+      height: size,
+      format: "png",
+      paddingRatio: 0.14,
+    },
+  ];
+}
+
+function buildIosAppIconsetOutputs(): MakeIconOutput[] {
+  type Entry = {
+    idiom: "iphone" | "ipad" | "ios-marketing";
+    size: string;
+    scale: "1x" | "2x" | "3x";
+    px: number;
+    filename: string;
+  };
+
+  const entries: Entry[] = [
+    {
+      idiom: "iphone",
+      size: "20x20",
+      scale: "2x",
+      px: 40,
+      filename: "icon-20@2x.png",
+    },
+    {
+      idiom: "iphone",
+      size: "20x20",
+      scale: "3x",
+      px: 60,
+      filename: "icon-20@3x.png",
+    },
+    {
+      idiom: "iphone",
+      size: "29x29",
+      scale: "2x",
+      px: 58,
+      filename: "icon-29@2x.png",
+    },
+    {
+      idiom: "iphone",
+      size: "29x29",
+      scale: "3x",
+      px: 87,
+      filename: "icon-29@3x.png",
+    },
+    {
+      idiom: "iphone",
+      size: "40x40",
+      scale: "2x",
+      px: 80,
+      filename: "icon-40@2x.png",
+    },
+    {
+      idiom: "iphone",
+      size: "40x40",
+      scale: "3x",
+      px: 120,
+      filename: "icon-40@3x.png",
+    },
+    {
+      idiom: "iphone",
+      size: "60x60",
+      scale: "2x",
+      px: 120,
+      filename: "icon-60@2x.png",
+    },
+    {
+      idiom: "iphone",
+      size: "60x60",
+      scale: "3x",
+      px: 180,
+      filename: "icon-60@3x.png",
+    },
+
+    {
+      idiom: "ipad",
+      size: "20x20",
+      scale: "1x",
+      px: 20,
+      filename: "icon-20@1x.png",
+    },
+    {
+      idiom: "ipad",
+      size: "20x20",
+      scale: "2x",
+      px: 40,
+      filename: "icon-20@2x-ipad.png",
+    },
+    {
+      idiom: "ipad",
+      size: "29x29",
+      scale: "1x",
+      px: 29,
+      filename: "icon-29@1x.png",
+    },
+    {
+      idiom: "ipad",
+      size: "29x29",
+      scale: "2x",
+      px: 58,
+      filename: "icon-29@2x-ipad.png",
+    },
+    {
+      idiom: "ipad",
+      size: "40x40",
+      scale: "1x",
+      px: 40,
+      filename: "icon-40@1x.png",
+    },
+    {
+      idiom: "ipad",
+      size: "40x40",
+      scale: "2x",
+      px: 80,
+      filename: "icon-40@2x-ipad.png",
+    },
+    {
+      idiom: "ipad",
+      size: "76x76",
+      scale: "1x",
+      px: 76,
+      filename: "icon-76@1x.png",
+    },
+    {
+      idiom: "ipad",
+      size: "76x76",
+      scale: "2x",
+      px: 152,
+      filename: "icon-76@2x.png",
+    },
+    {
+      idiom: "ipad",
+      size: "83.5x83.5",
+      scale: "2x",
+      px: 167,
+      filename: "icon-83.5@2x.png",
+    },
+
+    {
+      idiom: "ios-marketing",
+      size: "1024x1024",
+      scale: "1x",
+      px: 1024,
+      filename: "icon-1024.png",
+    },
+  ];
+
+  const images = entries.map((e) => ({
+    idiom: e.idiom,
+    size: e.size,
+    scale: e.scale,
+    filename: e.filename,
+  }));
+
+  const contents = JSON.stringify(
+    {
+      images,
+      info: { version: 1, author: "makeicon.dev" },
+    },
+    null,
+    2,
+  );
+
+  const outputs: MakeIconOutput[] = entries.map((e) => ({
+    kind: "raster",
+    path: `ios/AppIcon.appiconset/${e.filename}`,
+    width: e.px,
+    height: e.px,
+    format: "png",
+    paddingRatio: 0.08,
+  }));
+
+  outputs.push({
+    kind: "text",
+    path: "ios/AppIcon.appiconset/Contents.json",
+    content: contents,
+  });
+
+  outputs.push({
+    kind: "text",
+    path: "ios/README.txt",
+    content:
+      "Drop the AppIcon.appiconset folder into your Xcode asset catalog (Assets.xcassets). If your source image is smaller than 1024px, you may be upscaling.\n",
+  });
+
+  return outputs;
+}

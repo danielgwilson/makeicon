@@ -288,9 +288,58 @@ export function IconLab() {
   const [background, setBackground] = useState<string | null>(null);
 
   const [urlValue, setUrlValue] = useState("");
+  const [packQuery, setPackQuery] = useState("");
   const [selected, setSelected] = useState<PackSelection>(() => ({
     ...DEFAULT_PACKS,
   }));
+
+  const categoryOrder = useMemo(
+    () =>
+      [
+        "Web",
+        "Frameworks",
+        "Extensions",
+        "Chat",
+        "Native",
+        "Dev Platforms",
+        "Docs",
+        "Design",
+      ] as const,
+    [],
+  );
+
+  const visiblePacks = useMemo(() => {
+    const q = packQuery.trim().toLowerCase();
+    const packs = Object.values(PACKS);
+    if (!q) return packs;
+
+    return packs.filter((p) => {
+      const haystack = [
+        p.id,
+        p.category,
+        p.name,
+        p.summary,
+        p.filesSummary,
+        ...(p.keywords ?? []),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [packQuery]);
+
+  const packsByCategory = useMemo(() => {
+    const groups = new Map<
+      (typeof categoryOrder)[number],
+      MakeIconPackSpec[]
+    >();
+    for (const c of categoryOrder) groups.set(c, []);
+    for (const p of visiblePacks) {
+      const list = groups.get(p.category);
+      if (list) list.push(p);
+    }
+    return groups;
+  }, [categoryOrder, visiblePacks]);
 
   const selectedPacks = useMemo(() => {
     const ids = (Object.keys(selected) as MakeIconPackId[]).filter(
@@ -298,6 +347,16 @@ export function IconLab() {
     );
     return ids.map((k) => PACKS[k]);
   }, [selected]);
+
+  const plannedPaths = useMemo(() => {
+    const multi = selectedPacks.length > 1;
+    const paths: string[] = [];
+    for (const pack of selectedPacks) {
+      const base = multi ? `${pack.id}/` : "";
+      for (const o of pack.outputs) paths.push(`${base}${o.path}`);
+    }
+    return paths;
+  }, [selectedPacks]);
 
   const cleanupSource = useCallback((s: LoadedSource | null) => {
     if (!s) return;
@@ -755,11 +814,43 @@ export function IconLab() {
                 >
                   <Download className="mr-2 size-4" />
                   Download zip
+                  {selectedPacks.length ? (
+                    <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
+                      {selectedPacks.length} pack
+                      {selectedPacks.length === 1 ? "" : "s"}
+                    </span>
+                  ) : null}
                 </Button>
               </div>
             </div>
 
             <div className="p-5">
+              {source ? (
+                <div className="mb-5 grid gap-2 rounded-2xl border border-black/10 bg-white/60 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Included
+                    </div>
+                    <Badge variant="secondary" className="rounded-full">
+                      {plannedPaths.length} file
+                      {plannedPaths.length === 1 ? "" : "s"}
+                    </Badge>
+                  </div>
+                  <div className="grid gap-1 font-mono text-[11px] leading-5 text-muted-foreground">
+                    {plannedPaths.slice(0, 10).map((p) => (
+                      <div key={p} className="truncate">
+                        {p}
+                      </div>
+                    ))}
+                    {plannedPaths.length > 10 ? (
+                      <div className="text-xs">
+                        + {plannedPaths.length - 10} more…
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
               <Tabs defaultValue="packs" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="packs">Packs</TabsTrigger>
@@ -768,38 +859,67 @@ export function IconLab() {
 
                 <TabsContent value="packs" className="mt-4">
                   <div className="grid gap-3">
-                    {Object.values(PACKS).map((pack) => {
-                      const isOn = Boolean(selected[pack.id]);
+                    <div className="grid gap-2">
+                      <Label
+                        htmlFor={`${id}-pack-search`}
+                        className="text-xs text-muted-foreground"
+                      >
+                        Find a pack
+                      </Label>
+                      <Input
+                        id={`${id}-pack-search`}
+                        placeholder="Try: next, ios, slack, vercel…"
+                        value={packQuery}
+                        onChange={(e) => setPackQuery(e.target.value)}
+                      />
+                    </div>
+
+                    {categoryOrder.map((category) => {
+                      const packs = packsByCategory.get(category) ?? [];
+                      if (!packs.length) return null;
                       return (
-                        <button
-                          key={pack.id}
-                          type="button"
-                          className={cn(
-                            "w-full rounded-2xl border p-4 text-left transition",
-                            isOn
-                              ? "border-black/20 bg-black/[0.03] shadow-[0_14px_50px_rgba(0,0,0,0.08)]"
-                              : "border-black/10 bg-white/60 hover:border-black/18 hover:bg-white/80",
-                          )}
-                          onClick={() =>
-                            setSelected((prev) => ({
-                              ...prev,
-                              [pack.id]: !prev[pack.id],
-                            }))
-                          }
-                        >
-                          {packTitle(pack)}
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <Badge
-                              variant={isOn ? "default" : "secondary"}
-                              className="rounded-full"
-                            >
-                              {isOn ? "Included" : "Not included"}
-                            </Badge>
-                            <Badge variant="secondary" className="rounded-full">
-                              {pack.filesSummary}
-                            </Badge>
+                        <div key={category} className="grid gap-3">
+                          <div className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            {category}
                           </div>
-                        </button>
+                          {packs.map((pack) => {
+                            const isOn = Boolean(selected[pack.id]);
+                            return (
+                              <button
+                                key={pack.id}
+                                type="button"
+                                className={cn(
+                                  "w-full rounded-2xl border p-4 text-left transition",
+                                  isOn
+                                    ? "border-black/20 bg-black/[0.03] shadow-[0_14px_50px_rgba(0,0,0,0.08)]"
+                                    : "border-black/10 bg-white/60 hover:border-black/18 hover:bg-white/80",
+                                )}
+                                onClick={() =>
+                                  setSelected((prev) => ({
+                                    ...prev,
+                                    [pack.id]: !prev[pack.id],
+                                  }))
+                                }
+                              >
+                                {packTitle(pack)}
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  <Badge
+                                    variant={isOn ? "default" : "secondary"}
+                                    className="rounded-full"
+                                  >
+                                    {isOn ? "Included" : "Not included"}
+                                  </Badge>
+                                  <Badge
+                                    variant="secondary"
+                                    className="rounded-full"
+                                  >
+                                    {pack.filesSummary}
+                                  </Badge>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       );
                     })}
                   </div>
