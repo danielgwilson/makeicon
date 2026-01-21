@@ -28,6 +28,18 @@ function makeSeeded(seed: number) {
   };
 }
 
+function hashU32(x: number, y: number, seed: number) {
+  // Deterministic per-cell hash (stable across frames).
+  let h = (seed ^ Math.imul(x, 374761393) ^ Math.imul(y, 668265263)) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+function u32To01(u: number) {
+  return u / 4294967296;
+}
+
 function parseHslTriplet(value: string) {
   // expects "h s% l%" or "h s l"
   const parts = value.trim().split(/\s+/).slice(0, 3);
@@ -91,6 +103,7 @@ export function NoiseField({
     let lastMs = 0;
 
     const repaint = () => {
+      const grainIntensity = Math.min(1.15, intensity * 0.78 + 0.22);
       const nextDpr = Math.min(2, window.devicePixelRatio || 1);
       const nextW = Math.floor(window.innerWidth);
       const nextH = Math.floor(window.innerHeight);
@@ -125,7 +138,7 @@ export function NoiseField({
         height * 0.22,
         Math.max(width, height) * 0.85,
       );
-      const fogAlpha = (isDark ? 0.08 : 0.06) * intensity;
+      const fogAlpha = (isDark ? 0.08 : 0.06) * (0.7 + 0.3 * intensity);
       fog.addColorStop(
         0,
         hslToRgba(fg.h, Math.min(8, fg.s), isDark ? 92 : 8, fogAlpha),
@@ -144,7 +157,7 @@ export function NoiseField({
       if (tileCtx) {
         const img = tileCtx.createImageData(tile, tile);
         const data = img.data;
-        const grainA = Math.round((isDark ? 20 : 14) * intensity); // 0..255
+        const grainA = Math.round((isDark ? 20 : 14) * grainIntensity); // 0..255
         for (let i = 0; i < data.length; i += 4) {
           const v = Math.floor(prng() * 255);
           data[i + 0] = v;
@@ -156,7 +169,7 @@ export function NoiseField({
       }
 
       ctx.save();
-      ctx.globalAlpha = (isDark ? 0.55 : 0.45) * intensity;
+      ctx.globalAlpha = (isDark ? 0.55 : 0.45) * grainIntensity;
       ctx.globalCompositeOperation = isDark ? "screen" : "multiply";
       const drift = reduced ? 0 : t;
       for (let y = -tile; y < height + tile; y += tile) {
@@ -167,9 +180,9 @@ export function NoiseField({
       ctx.restore();
 
       // 3) Point-field / stipple (blue-noise-ish via jittered grid).
-      const cell = 34;
-      const jitter = 0.75;
-      const dotAlpha = (isDark ? 0.08 : 0.06) * intensity;
+      const cell = 30;
+      const jitter = 0.86;
+      const dotAlpha = (isDark ? 0.14 : 0.11) * intensity;
       const dot = hslToRgba(fg.h, Math.min(8, fg.s), isDark ? 92 : 8, dotAlpha);
       const dot2 = hslToRgba(
         fg.h,
@@ -181,24 +194,50 @@ export function NoiseField({
       ctx.save();
       ctx.globalCompositeOperation = isDark ? "screen" : "multiply";
       ctx.fillStyle = dot;
+      const tt = reduced ? 0 : t * 0.06;
+      const gx0 = reduced ? 0 : Math.sin(tt * 0.35) * 2.4;
+      const gy0 = reduced ? 0 : Math.cos(tt * 0.29) * 2.0;
       for (let gy = 0; gy < Math.ceil(height / cell) + 1; gy++) {
         for (let gx = 0; gx < Math.ceil(width / cell) + 1; gx++) {
-          const ox = (prng() - 0.5) * cell * jitter;
-          const oy = (prng() - 0.5) * cell * jitter;
-          const x = gx * cell + ox + (reduced ? 0 : t * 3);
-          const y = gy * cell + oy + (reduced ? 0 : t * 2);
-          const size = prng() < 0.12 ? 2 : 1;
-          if (prng() < 0.78) {
-            ctx.fillRect(Math.round(x), Math.round(y), size, size);
-          }
+          const h = hashU32(gx, gy, seed);
+          const r0 = u32To01(h);
+          if (r0 < 0.18) continue;
+
+          const r1 = u32To01(hashU32(gx + 11, gy + 7, seed));
+          const r2 = u32To01(hashU32(gx + 23, gy + 19, seed));
+          const r3 = u32To01(hashU32(gx + 41, gy + 29, seed));
+
+          const ox = (r1 - 0.5) * cell * jitter;
+          const oy = (r2 - 0.5) * cell * jitter;
+
+          const phase = r3 * Math.PI * 2;
+          const mx = reduced ? 0 : Math.sin(tt + phase) * 2.2;
+          const my = reduced ? 0 : Math.cos(tt * 0.92 + phase) * 1.7;
+          const pulse = reduced ? 1 : 0.72 + 0.28 * Math.sin(tt * 0.9 + phase);
+          ctx.globalAlpha = pulse;
+
+          const x = gx * cell + ox + mx + gx0;
+          const y = gy * cell + oy + my + gy0;
+
+          const size = r0 > 0.97 ? 3 : r0 > 0.87 ? 2 : 1;
+          ctx.fillRect(Math.round(x), Math.round(y), size, size);
         }
       }
 
       // Extra micro-speckles.
       ctx.fillStyle = dot2;
-      for (let i = 0; i < 800; i++) {
-        const x = prng() * width + (reduced ? 0 : t * 8);
-        const y = prng() * height + (reduced ? 0 : t * 6);
+      ctx.globalAlpha = 1;
+      for (let i = 0; i < 1100; i++) {
+        const h = hashU32(i, i ^ 1337, seed);
+        const x0 = u32To01(h);
+        const y0 = u32To01(hashU32(i ^ 0x9e37, i, seed));
+        const phase = u32To01(hashU32(i ^ 77, i ^ 101, seed)) * Math.PI * 2;
+        const mx = reduced ? 0 : Math.sin(tt * 1.2 + phase) * 3.2;
+        const my = reduced ? 0 : Math.cos(tt * 1.05 + phase) * 2.8;
+        const x = x0 * width + mx + gx0 * 0.6;
+        const y = y0 * height + my + gy0 * 0.6;
+        const pulse = reduced ? 1 : 0.55 + 0.45 * Math.sin(tt * 1.05 + phase);
+        ctx.globalAlpha = pulse;
         ctx.fillRect(Math.round(x), Math.round(y), 1, 1);
       }
       ctx.restore();

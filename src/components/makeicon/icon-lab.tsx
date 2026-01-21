@@ -605,7 +605,10 @@ export function IconLab() {
       onDragLeave={onDragLeaveRoot}
       onDrop={onDrop}
     >
-      <NoiseField className="pointer-events-none fixed inset-0 z-0" />
+      <NoiseField
+        className="pointer-events-none fixed inset-0 z-0 opacity-[1] mix-blend-multiply dark:mix-blend-screen"
+        intensity={1.3}
+      />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-24 bg-gradient-to-b from-foreground/[0.06] to-transparent" />
 
       <header className="container relative z-10 flex flex-col gap-4 pt-10 pb-8 sm:flex-row sm:items-center sm:justify-between">
