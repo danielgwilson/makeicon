@@ -23,6 +23,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
+import { NoiseField } from "@/components/makeicon/noise-field";
 import { PackIcon } from "@/components/makeicon/pack-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -604,9 +605,10 @@ export function IconLab() {
       onDragLeave={onDragLeaveRoot}
       onDrop={onDrop}
     >
+      <NoiseField className="pointer-events-none fixed inset-0 z-0" />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-24 bg-gradient-to-b from-foreground/[0.06] to-transparent" />
 
-      <header className="container relative flex items-center justify-between pt-10 pb-8">
+      <header className="container relative z-10 flex items-center justify-between pt-10 pb-8">
         <div className="flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-2xl bg-foreground text-background shadow-[0_14px_60px_hsl(var(--foreground)/0.16)]">
             <Sparkles className="size-5" />
@@ -642,7 +644,7 @@ export function IconLab() {
         </div>
       </header>
 
-      <main className="container relative pb-24">
+      <main className="container relative z-10 pb-24">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <Card className="overflow-hidden border-border bg-card p-0 shadow-[0_20px_80px_hsl(var(--foreground)/0.08)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
             <div className="border-b border-border bg-card px-5 py-4">
