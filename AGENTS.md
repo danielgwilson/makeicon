@@ -5,10 +5,10 @@ This repo is designed to be worked on by humans + coding agents. Optimize for **
 ## Project Links (keep updated)
 
 <!-- kit:project-links:start -->
-- GitHub: (fill)
-- Vercel: (fill)
-- Domain: (fill)
-- App URL (prod): (fill)
+- GitHub: danielgwilson/makeicon
+- Vercel: makeicon
+- Domain: makeicon.dev
+- App URL (prod): https://makeicon.dev
 - DB (provider + project): (fill)
 - Redis (provider): (fill)
 - Inngest: (fill)
@@ -45,6 +45,7 @@ This repo is designed to be worked on by humans + coding agents. Optimize for **
 
 
 
+
 <!-- kit:section:git-workflow:start -->
 ## Git Workflow (authority)
 
@@ -54,6 +55,7 @@ This repo is designed to be worked on by humans + coding agents. Optimize for **
   - do **not** force-push `main`
   - do **not** auto-merge PRs into `main` unless explicitly confirmed
 <!-- kit:section:git-workflow:end -->
+
 
 
 
@@ -67,6 +69,7 @@ This repo is designed to be worked on by humans + coding agents. Optimize for **
 - All tests: `pnpm test:all`
 - Fast checks before handing off work: `pnpm lint` + `pnpm typecheck`
 <!-- kit:section:testing:end -->
+
 
 
 ## Quick Start

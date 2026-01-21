@@ -7,5 +7,10 @@
   "scaffold": {
     "tests": true
   },
-  "links": {}
+  "links": {
+    "github": "danielgwilson/makeicon",
+    "vercel": "makeicon",
+    "domain": "makeicon.dev",
+    "appUrl": "https://makeicon.dev"
+  }
 }
