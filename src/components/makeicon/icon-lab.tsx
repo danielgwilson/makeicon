@@ -23,6 +23,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
+import { HalftoneField } from "@/components/makeicon/halftone-field";
 import { NoiseField } from "@/components/makeicon/noise-field";
 import { PackIcon } from "@/components/makeicon/pack-icon";
 import { Badge } from "@/components/ui/badge";
@@ -605,9 +606,13 @@ export function IconLab() {
       onDragLeave={onDragLeaveRoot}
       onDrop={onDrop}
     >
+      <HalftoneField
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.86] mix-blend-multiply dark:mix-blend-screen"
+        intensity={1.15}
+      />
       <NoiseField
-        className="pointer-events-none fixed inset-0 z-0 opacity-[1] mix-blend-multiply dark:mix-blend-screen"
-        intensity={1.3}
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.72] mix-blend-multiply dark:mix-blend-screen"
+        intensity={1.05}
       />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-24 bg-gradient-to-b from-foreground/[0.06] to-transparent" />
 
