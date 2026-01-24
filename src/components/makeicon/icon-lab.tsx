@@ -23,9 +23,9 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
-import { HalftoneField } from "@/components/makeicon/halftone-field";
 import { NoiseField } from "@/components/makeicon/noise-field";
 import { PackIcon } from "@/components/makeicon/pack-icon";
+import { PixelGridField } from "@/components/makeicon/pixel-grid-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -282,27 +282,31 @@ function packTitle(pack: MakeIconPackSpec) {
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 items-start gap-3">
-        <div className="mt-0.5 grid size-9 place-items-center rounded-xl border border-border bg-background text-muted-foreground transition group-hover:scale-[1.03] group-hover:bg-background/80">
+        <div className="mt-0.5 grid size-9 place-items-center rounded-2xl border border-border/70 bg-background/45 text-muted-foreground transition group-hover:scale-[1.03] group-hover:bg-background/70">
           <PackIcon
             packId={pack.id}
             className={cn("transition", packAccent(pack.id))}
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="font-[family-name:var(--font-display)] text-[15px] leading-5 tracking-tight text-foreground">
+          <div className="text-[15px] leading-5 font-semibold tracking-tight text-foreground">
             {pack.name}
           </div>
           {pack.badges?.map((b) => (
-            <Badge key={b} variant="secondary" className="rounded-full">
+            <Badge
+              key={b}
+              variant="secondary"
+              className="rounded-full font-mono text-[11px] uppercase tracking-[0.14em]"
+            >
               {b}
             </Badge>
           ))}
         </div>
-        <div className="mt-1 text-sm leading-5 text-muted-foreground">
+        <div className="mt-1 text-[13px] leading-5 font-mono text-muted-foreground">
           {pack.summary}
         </div>
       </div>
-      <ArrowRight className="mt-1 size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground/80" />
+      <ArrowRight className="mt-1 size-4 text-muted-foreground/80 transition group-hover:translate-x-0.5 group-hover:text-foreground/80" />
     </div>
   );
 }
@@ -606,275 +610,332 @@ export function IconLab() {
       onDragLeave={onDragLeaveRoot}
       onDrop={onDrop}
     >
-      <HalftoneField
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.86] mix-blend-multiply dark:mix-blend-screen"
-        intensity={1.15}
+      <PixelGridField
+        className={cn(
+          "pointer-events-none fixed inset-0 z-0",
+          "opacity-[0.95] dark:opacity-[0.55]",
+          "[mask-image:linear-gradient(to_top,rgba(0,0,0,0.92),rgba(0,0,0,0.05)_58%,transparent_78%)]",
+          "[-webkit-mask-image:linear-gradient(to_top,rgba(0,0,0,0.92),rgba(0,0,0,0.05)_58%,transparent_78%)]",
+        )}
+        intensity={1}
       />
       <NoiseField
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.72] mix-blend-multiply dark:mix-blend-screen"
-        intensity={1.05}
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.32] mix-blend-multiply dark:mix-blend-screen"
+        intensity={0.9}
       />
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-24 bg-gradient-to-b from-foreground/[0.06] to-transparent" />
+      <div
+        className={cn(
+          "pointer-events-none fixed inset-0 z-0",
+          "bg-[radial-gradient(900px_520px_at_18%_10%,hsl(var(--foreground)/0.08),transparent_60%),radial-gradient(800px_480px_at_74%_16%,hsl(var(--accent)/0.10),transparent_65%)]",
+        )}
+      />
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-28 bg-gradient-to-b from-background via-background/70 to-transparent" />
 
-      <header className="container relative z-10 flex flex-col gap-4 pt-10 pb-8 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="grid size-10 place-items-center rounded-2xl bg-foreground text-background shadow-[0_14px_60px_hsl(var(--foreground)/0.16)]">
-            <Sparkles className="size-5" />
-          </div>
-          <div className="min-w-0 leading-none">
-            <div className="font-[family-name:var(--font-display)] text-[20px] tracking-tight">
-              makeicon
+      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/75 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="grid size-10 place-items-center rounded-2xl border border-border/70 bg-background shadow-[0_18px_90px_hsl(var(--foreground)/0.06)]">
+              <Sparkles className="size-5" />
             </div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              Drop an image → download the exact icons you need.
+            <div className="min-w-0 leading-none">
+              <div className="font-[family-name:var(--font-display)] text-[22px] leading-none tracking-tight italic">
+                makeicon
+              </div>
+              <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.26em] text-muted-foreground">
+                one image → the exact icons you need
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="secondary"
-            className="rounded-full"
-            onClick={onPickFile}
-            disabled={isLoading}
-          >
-            <Upload className="mr-2 size-4" />
-            Pick file
-          </Button>
-          <Button
-            variant="ghost"
-            className="rounded-full"
-            onClick={reset}
-            disabled={!hasSource}
-          >
-            <RotateCcw className="mr-2 size-4" />
-            Reset
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+              onClick={onPickFile}
+              disabled={isLoading}
+            >
+              <Upload className="mr-2 size-4" />
+              Pick file
+            </Button>
+            <Button
+              variant="ghost"
+              className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+              onClick={reset}
+              disabled={!hasSource}
+            >
+              <RotateCcw className="mr-2 size-4" />
+              Reset
+            </Button>
+          </div>
         </div>
       </header>
 
-      <main className="container relative z-10 pb-24">
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <Card className="overflow-hidden border-border bg-card p-0 shadow-[0_20px_80px_hsl(var(--foreground)/0.08)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
-            <div className="border-b border-border bg-card px-5 py-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="font-[family-name:var(--font-display)] text-lg tracking-tight">
-                    Input
-                  </div>
-                  <div className="mt-1 text-sm text-muted-foreground">
-                    Drag & drop, paste, or load from a URL.
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary" className="rounded-full">
-                    <ClipboardPaste className="mr-1 size-3.5" /> Paste
-                    (⌘/Ctrl+V)
-                  </Badge>
-                  <Badge variant="secondary" className="rounded-full">
-                    PNG · JPG · WebP · AVIF · SVG
-                  </Badge>
-                </div>
+      <main className="container relative z-10 pt-10 pb-24">
+        <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="grid gap-8">
+            <div className="grid gap-5">
+              <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] uppercase tracking-[0.32em] text-muted-foreground">
+                <span className="inline-flex items-center gap-2">
+                  <span className="size-1.5 rounded-full bg-accent" />
+                  icon pack generator
+                </span>
+                <span className="hidden sm:inline">·</span>
+                <span>drop · paste · url</span>
               </div>
+              <h1 className="leading-[0.9] tracking-tight text-balance">
+                <span className="block font-[family-name:var(--font-display)] text-5xl italic sm:text-6xl lg:text-7xl">
+                  Icons for
+                </span>
+                <span
+                  className={cn(
+                    "mt-1 block font-[family-name:var(--font-body)] text-5xl font-semibold sm:text-6xl lg:text-7xl",
+                    "text-transparent tracking-[-0.06em]",
+                    "[-webkit-text-stroke:1px_hsl(var(--foreground))]",
+                    "dark:[-webkit-text-stroke:1px_hsl(var(--foreground)/0.85)]",
+                  )}
+                >
+                  real deployments
+                </span>
+              </h1>
+              <p className="max-w-[60ch] text-sm leading-6 text-muted-foreground sm:text-base">
+                Drop one image. Pick the target scenario. Download a zip that’s
+                picky about sizes, filenames, and platform quirks.
+              </p>
             </div>
 
-            <div className="p-5">
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label
-                    htmlFor={`${id}-url`}
-                    className="flex items-center gap-2"
-                  >
-                    <Link2 className="size-4" />
-                    Image URL
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id={`${id}-url`}
-                      placeholder="https://…"
-                      value={urlValue}
-                      onChange={(e) => setUrlValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") loadFromUrl();
+            <Card className="overflow-hidden border-border/70 bg-card/70 p-0 shadow-[0_28px_120px_hsl(var(--foreground)/0.06)] backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
+              <div className="border-b border-border/70 bg-background/40 px-6 py-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+                      Input
+                    </div>
+                    <div className="mt-2 text-sm leading-6 text-muted-foreground">
+                      Drag & drop, paste, or load from a URL.
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full font-mono text-[11px] uppercase tracking-[0.14em]"
+                    >
+                      <ClipboardPaste className="mr-1 size-3.5" /> Paste
+                      (⌘/Ctrl+V)
+                    </Badge>
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full font-mono text-[11px] uppercase tracking-[0.14em]"
+                    >
+                      PNG · JPG · WebP · AVIF · SVG
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 py-6">
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label
+                      htmlFor={`${id}-url`}
+                      className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground"
+                    >
+                      <Link2 className="size-4" />
+                      Image URL
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id={`${id}-url`}
+                        placeholder="https://…"
+                        value={urlValue}
+                        onChange={(e) => setUrlValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") loadFromUrl();
+                        }}
+                        className="bg-background/60"
+                      />
+                      <Button
+                        variant="outline"
+                        className="font-mono text-[12px] uppercase tracking-[0.18em]"
+                        onClick={loadFromUrl}
+                        disabled={isLoading}
+                      >
+                        Load
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.length) onFiles(e.target.files);
+                        e.currentTarget.value = "";
                       }}
                     />
-                    <Button
-                      variant="secondary"
-                      onClick={loadFromUrl}
-                      disabled={isLoading}
+
+                    <div
+                      className={cn(
+                        "group relative grid min-h-[280px] place-items-center overflow-hidden rounded-2xl border border-dashed",
+                        "border-border/70 bg-background/40 transition",
+                        isDragging
+                          ? "border-foreground/40 bg-muted/50 shadow-[0_0_0_6px_hsl(var(--foreground)/0.05)]"
+                          : "hover:border-foreground/25",
+                        "shadow-inner shadow-foreground/5",
+                      )}
                     >
-                      Load
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid gap-3">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files?.length) onFiles(e.target.files);
-                      e.currentTarget.value = "";
-                    }}
-                  />
-
-                  <div
-                    className={cn(
-                      "group relative grid min-h-[280px] place-items-center overflow-hidden rounded-2xl border border-dashed",
-                      "border-border/70 bg-muted/30 transition",
-                      isDragging
-                        ? "border-foreground/40 bg-muted/50 shadow-[0_0_0_6px_hsl(var(--foreground)/0.05)]"
-                        : "hover:border-foreground/25",
-                      "shadow-inner shadow-foreground/5",
-                    )}
-                  >
-                    {!source ? (
-                      <div className="mx-auto flex max-w-lg flex-col items-center px-8 text-center">
-                        <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-foreground text-background shadow-[0_20px_70px_hsl(var(--foreground)/0.16)] transition group-hover:scale-[1.03]">
-                          <Upload className="size-6" />
-                        </div>
-                        <div className="font-[family-name:var(--font-display)] text-2xl tracking-tight">
-                          Drop an image.
-                        </div>
-                        <div className="mt-2 text-sm leading-6 text-muted-foreground">
-                          Or paste from clipboard, or pick a file. You’ll get a
-                          perfect zip for common icon scenarios.
-                        </div>
-                        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-                          <Button
-                            onClick={onPickFile}
-                            disabled={isLoading}
-                            className="rounded-full"
-                          >
-                            {isLoading ? (
-                              <Loader2 className="mr-2 size-4 animate-spin" />
-                            ) : null}
-                            Choose file
-                            <ArrowRight className="ml-2 size-4" />
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            onClick={pasteFromClipboard}
-                            disabled={isLoading}
-                            className="rounded-full"
-                          >
-                            Paste image
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="relative w-full">
-                        <div className="grid gap-4 p-4 sm:grid-cols-[1fr_220px] sm:items-start">
-                          <div className="bg-checkerboard relative overflow-hidden rounded-xl border border-border">
-                            <div className="relative flex items-center justify-center p-4">
-                              <Image
-                                src={source.objectUrl}
-                                alt="Input"
-                                width={Math.min(900, source.width)}
-                                height={Math.min(900, source.height)}
-                                className="max-h-[320px] w-auto max-w-full object-contain"
-                                unoptimized
-                                priority
-                              />
-                            </div>
+                      {!source ? (
+                        <div className="mx-auto flex max-w-lg flex-col items-center px-8 text-center">
+                          <div className="mb-4 grid size-14 place-items-center rounded-2xl border border-border/70 bg-background/70 shadow-[0_22px_90px_hsl(var(--foreground)/0.06)] transition group-hover:scale-[1.02]">
+                            <Upload className="size-6" />
                           </div>
-
-                          <div className="grid gap-3 rounded-xl border border-border bg-card p-3">
-                            <div className="text-xs font-medium text-muted-foreground">
-                              Framing
+                          <div className="font-[family-name:var(--font-display)] text-3xl tracking-tight italic">
+                            Drop an image.
+                          </div>
+                          <div className="mt-3 text-sm leading-6 font-mono text-muted-foreground">
+                            Or paste with ⌘/Ctrl+V, or load a URL. You’ll get a
+                            zip that matches real platform constraints.
+                          </div>
+                          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                            <Button
+                              onClick={onPickFile}
+                              disabled={isLoading}
+                              variant="brand"
+                              className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="mr-2 size-4 animate-spin" />
+                              ) : null}
+                              Choose file
+                              <ArrowRight className="ml-2 size-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={pasteFromClipboard}
+                              disabled={isLoading}
+                              className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                            >
+                              Paste image
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative w-full">
+                          <div className="grid gap-4 p-4 sm:grid-cols-[1fr_220px] sm:items-start">
+                            <div className="bg-checkerboard relative overflow-hidden rounded-xl border border-border">
+                              <div className="relative flex items-center justify-center p-4">
+                                <Image
+                                  src={source.objectUrl}
+                                  alt="Input"
+                                  width={Math.min(900, source.width)}
+                                  height={Math.min(900, source.height)}
+                                  className="max-h-[320px] w-auto max-w-full object-contain"
+                                  unoptimized
+                                  priority
+                                />
+                              </div>
                             </div>
-                            <div className="grid gap-2">
-                              <div className="flex gap-2">
-                                <Button
-                                  type="button"
-                                  variant={
-                                    fit === "contain" ? "default" : "secondary"
-                                  }
-                                  className="h-9 flex-1 rounded-lg"
-                                  onClick={() => setFit("contain")}
-                                >
-                                  Contain
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant={
-                                    fit === "cover" ? "default" : "secondary"
-                                  }
-                                  className="h-9 flex-1 rounded-lg"
-                                  onClick={() => setFit("cover")}
-                                >
-                                  Cover
-                                </Button>
+
+                            <div className="grid gap-3 rounded-2xl border border-border/70 bg-background/45 p-4">
+                              <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
+                                Framing
                               </div>
-                              <div className="grid gap-1.5">
-                                <Label
-                                  htmlFor={`${id}-pad`}
-                                  className="text-xs text-muted-foreground"
-                                >
-                                  Padding
-                                </Label>
-                                <input
-                                  id={`${id}-pad`}
-                                  type="range"
-                                  min={0}
-                                  max={0.24}
-                                  step={0.01}
-                                  value={paddingRatio}
-                                  onChange={(e) =>
-                                    setPaddingRatio(Number(e.target.value))
-                                  }
-                                  className="w-full accent-foreground"
-                                />
-                              </div>
-                              <div className="grid gap-1.5">
-                                <Label
-                                  htmlFor={`${id}-bg`}
-                                  className="text-xs text-muted-foreground"
-                                >
-                                  Background (optional)
-                                </Label>
-                                <Input
-                                  id={`${id}-bg`}
-                                  placeholder="transparent"
-                                  value={background ?? ""}
-                                  onChange={(e) => {
-                                    const v = e.target.value.trim();
-                                    setBackground(v ? v : null);
-                                  }}
-                                />
+                              <div className="grid gap-2">
+                                <div className="flex gap-2">
+                                  <Button
+                                    type="button"
+                                    variant={
+                                      fit === "contain"
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                    className="h-9 flex-1 rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                                    onClick={() => setFit("contain")}
+                                  >
+                                    Contain
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant={
+                                      fit === "cover" ? "default" : "secondary"
+                                    }
+                                    className="h-9 flex-1 rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                                    onClick={() => setFit("cover")}
+                                  >
+                                    Cover
+                                  </Button>
+                                </div>
+                                <div className="grid gap-1.5">
+                                  <Label
+                                    htmlFor={`${id}-pad`}
+                                    className="text-xs text-muted-foreground"
+                                  >
+                                    Padding
+                                  </Label>
+                                  <input
+                                    id={`${id}-pad`}
+                                    type="range"
+                                    min={0}
+                                    max={0.24}
+                                    step={0.01}
+                                    value={paddingRatio}
+                                    onChange={(e) =>
+                                      setPaddingRatio(Number(e.target.value))
+                                    }
+                                    className="w-full accent-foreground"
+                                  />
+                                </div>
+                                <div className="grid gap-1.5">
+                                  <Label
+                                    htmlFor={`${id}-bg`}
+                                    className="text-xs text-muted-foreground"
+                                  >
+                                    Background (optional)
+                                  </Label>
+                                  <Input
+                                    id={`${id}-bg`}
+                                    placeholder="transparent"
+                                    value={background ?? ""}
+                                    onChange={(e) => {
+                                      const v = e.target.value.trim();
+                                      setBackground(v ? v : null);
+                                    }}
+                                  />
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
 
-          <Card className="overflow-hidden border-border bg-card p-0 shadow-[0_20px_80px_hsl(var(--foreground)/0.08)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:delay-150">
-            <div className="border-b border-border bg-card px-5 py-4">
-              <div className="flex items-center justify-between gap-3">
+          <Card className="overflow-hidden border-border/70 bg-card/70 p-0 shadow-[0_28px_120px_hsl(var(--foreground)/0.06)] backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:delay-150">
+            <div className="border-b border-border/70 bg-background/40 px-6 py-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <div className="font-[family-name:var(--font-display)] text-lg tracking-tight">
+                  <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
                     Export
                   </div>
-                  <div className="mt-1 text-sm text-muted-foreground">
+                  <div className="mt-2 text-sm leading-6 text-muted-foreground">
                     Pick a pack. Download a zip.
                   </div>
                 </div>
                 <Button
+                  variant="brand"
                   onClick={downloadSelectedZip}
                   disabled={!source || isLoading}
-                  className="rounded-full"
+                  className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
                 >
                   <Download className="mr-2 size-4" />
                   Download zip
                   {selectedPacks.length ? (
-                    <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
+                    <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-[11px]">
                       {selectedPacks.length} pack
                       {selectedPacks.length === 1 ? "" : "s"}
                     </span>
@@ -883,14 +944,17 @@ export function IconLab() {
               </div>
             </div>
 
-            <div className="p-5">
+            <div className="px-6 py-6">
               {source ? (
-                <div className="mb-5 grid gap-2 rounded-2xl border border-border bg-muted/30 p-4">
+                <div className="mb-6 grid gap-2 rounded-3xl border border-border/70 bg-background/35 p-5 shadow-[0_18px_70px_hsl(var(--foreground)/0.05)]">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
                       Included
                     </div>
-                    <Badge variant="secondary" className="rounded-full">
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full font-mono text-[11px] uppercase tracking-[0.14em]"
+                    >
                       {plannedPaths.length} file
                       {plannedPaths.length === 1 ? "" : "s"}
                     </Badge>
@@ -911,9 +975,19 @@ export function IconLab() {
               ) : null}
 
               <Tabs defaultValue="packs" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="packs">Packs</TabsTrigger>
-                  <TabsTrigger value="notes">Notes</TabsTrigger>
+                <TabsList className="grid h-10 w-full grid-cols-2 rounded-full border border-border/70 bg-background/45 p-1">
+                  <TabsTrigger
+                    value="packs"
+                    className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                  >
+                    Packs
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="notes"
+                    className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                  >
+                    Notes
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="packs" className="mt-4">
@@ -921,7 +995,7 @@ export function IconLab() {
                     <div className="grid min-w-0 gap-2">
                       <Label
                         htmlFor={`${id}-pack-search`}
-                        className="text-xs text-muted-foreground"
+                        className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground"
                       >
                         Find a pack
                       </Label>
@@ -930,6 +1004,7 @@ export function IconLab() {
                         placeholder="Try: next, ios, slack, vercel…"
                         value={packQuery}
                         onChange={(e) => setPackQuery(e.target.value)}
+                        className="bg-background/60"
                       />
                     </div>
 
@@ -938,7 +1013,7 @@ export function IconLab() {
                       if (!packs.length) return null;
                       return (
                         <div key={category} className="grid min-w-0 gap-3">
-                          <div className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          <div className="mt-2 font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
                             {category}
                           </div>
                           {packs.map((pack) => {
@@ -948,11 +1023,12 @@ export function IconLab() {
                                 key={pack.id}
                                 type="button"
                                 className={cn(
-                                  "group w-full min-w-0 rounded-2xl border p-4 text-left transition",
-                                  "hover:-translate-y-0.5 hover:shadow-[0_18px_70px_hsl(var(--foreground)/0.10)] active:translate-y-0",
+                                  "group relative w-full min-w-0 rounded-3xl border p-5 text-left transition",
+                                  "bg-background/30 border-border/70",
+                                  "hover:-translate-y-0.5 hover:border-foreground/18 hover:bg-background/45 hover:shadow-[0_20px_90px_hsl(var(--foreground)/0.08)] active:translate-y-0",
                                   isOn
-                                    ? "border-foreground/20 bg-foreground/[0.03]"
-                                    : "border-border bg-card hover:border-foreground/18",
+                                    ? "border-foreground/20 bg-background/55 shadow-[0_22px_90px_hsl(var(--foreground)/0.06)]"
+                                    : null,
                                 )}
                                 onClick={() =>
                                   setSelected((prev) => ({
@@ -1023,31 +1099,37 @@ export function IconLab() {
           </Card>
         </div>
 
-        <footer className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-border pt-8 text-sm text-muted-foreground md:flex-row md:items-center">
-          <div>
-            <span className="font-medium text-foreground">makeicon.dev</span> —
-            fast, picky, and designed for real deployment oddities.
-            <div className="mt-1 text-xs">
-              Logos are trademarks of their respective owners.
+        <footer className="mt-16 border-t border-border/70 pt-10">
+          <div className="flex flex-col items-start justify-between gap-6 text-muted-foreground md:flex-row md:items-end">
+            <div className="grid gap-2">
+              <div className="font-mono text-[11px] uppercase tracking-[0.3em]">
+                makeicon.dev
+              </div>
+              <div className="max-w-[62ch] text-sm leading-6">
+                Fast, picky, and designed for real deployment oddities.
+              </div>
+              <div className="text-xs text-muted-foreground/80">
+                Logos are trademarks of their respective owners.
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <a
-              className="underline decoration-border underline-offset-4 hover:text-foreground"
-              href="https://github.com/danielgwilson/makeicon"
-              target="_blank"
-              rel="noreferrer"
-            >
-              GitHub
-            </a>
-            <a
-              className="underline decoration-border underline-offset-4 hover:text-foreground"
-              href="https://vercel.com/dgwto/makeicon"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Vercel
-            </a>
+            <div className="flex items-center gap-5 font-mono text-[12px] uppercase tracking-[0.18em]">
+              <a
+                className="underline decoration-border/60 underline-offset-4 hover:text-foreground"
+                href="https://github.com/danielgwilson/makeicon"
+                target="_blank"
+                rel="noreferrer"
+              >
+                GitHub
+              </a>
+              <a
+                className="underline decoration-border/60 underline-offset-4 hover:text-foreground"
+                href="https://vercel.com/dgwto/makeicon"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Vercel
+              </a>
+            </div>
           </div>
         </footer>
       </main>

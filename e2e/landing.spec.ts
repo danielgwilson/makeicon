@@ -8,9 +8,9 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(scrollWidth).toBeLessThanOrEqual(innerWidth + 1);
 }
 
-async function expectHalftoneNotBlank(page: Page) {
+async function expectPixelGridNotBlank(page: Page) {
   const alphaSum = await page.evaluate(() => {
-    const el = document.querySelector('[data-testid="halftone-field"]');
+    const el = document.querySelector('[data-testid="pixel-grid-field"]');
     if (!el || !(el instanceof HTMLCanvasElement)) return 0;
     const ctx = el.getContext("2d");
     if (!ctx) return 0;
@@ -20,11 +20,11 @@ async function expectHalftoneNotBlank(page: Page) {
     if (!w || !h) return 0;
 
     const samples = [
-      [0.2, 0.16],
-      [0.26, 0.22],
-      [0.68, 0.32],
-      [0.74, 0.36],
-      [0.5, 0.12],
+      [0.12, 0.72],
+      [0.24, 0.78],
+      [0.5, 0.74],
+      [0.76, 0.8],
+      [0.88, 0.7],
     ];
 
     let sum = 0;
@@ -44,17 +44,19 @@ async function expectHalftoneNotBlank(page: Page) {
 }
 
 test.describe("landing", () => {
-  test("desktop: halftone visible, no overflow", async ({ page }, testInfo) => {
+  test("desktop: pixel grid visible, no overflow", async ({
+    page,
+  }, testInfo) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto("/");
 
     await expect(page.getByText("makeicon", { exact: true })).toBeVisible();
-    await expect(page.getByTestId("halftone-field")).toBeVisible();
+    await expect(page.getByTestId("pixel-grid-field")).toBeVisible();
     await page.waitForTimeout(250);
 
     await expectNoHorizontalOverflow(page);
-    await expectHalftoneNotBlank(page);
+    await expectPixelGridNotBlank(page);
 
     await page.screenshot({
       path: testInfo.outputPath("landing-desktop.png"),
@@ -62,17 +64,19 @@ test.describe("landing", () => {
     });
   });
 
-  test("mobile: halftone visible, no overflow", async ({ page }, testInfo) => {
+  test("mobile: pixel grid visible, no overflow", async ({
+    page,
+  }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.goto("/");
 
     await expect(page.getByText("makeicon", { exact: true })).toBeVisible();
-    await expect(page.getByTestId("halftone-field")).toBeVisible();
+    await expect(page.getByTestId("pixel-grid-field")).toBeVisible();
     await page.waitForTimeout(250);
 
     await expectNoHorizontalOverflow(page);
-    await expectHalftoneNotBlank(page);
+    await expectPixelGridNotBlank(page);
 
     await page.screenshot({
       path: testInfo.outputPath("landing-mobile.png"),
