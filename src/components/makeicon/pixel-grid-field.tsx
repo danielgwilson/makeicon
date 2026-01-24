@@ -125,14 +125,14 @@ export function PixelGridField({
       ctx.clearRect(0, 0, width, height);
 
       const cell = width < 420 ? 10 : width < 900 ? 11 : width < 1280 ? 12 : 13;
-      const px = width < 420 ? 2 : 2;
+      const px = 2;
       const inset = Math.floor((cell - px) / 2);
 
       const cols = Math.ceil(width / cell) + 1;
       const rows = Math.ceil(height / cell) + 1;
 
       const tt = reduced ? 0 : t * 0.004;
-      const baseAlpha = (isDark ? 0.14 : 0.11) * (0.65 + 0.35 * intensity);
+      const baseAlpha = (isDark ? 0.14 : 0.18) * (0.6 + 0.4 * intensity);
       const base = hslToRgba(ink.h, Math.min(18, ink.s), isDark ? 88 : 22, 1);
       const highlight = hslToRgba(
         accent.h,
@@ -145,9 +145,16 @@ export function PixelGridField({
         const y = gy * cell;
         const y01 = y / Math.max(1, height);
 
-        // Concentrate the grid toward the lower half of the viewport.
-        const fade = smoothstep(0.26, 0.92, y01);
+        // Present throughout, gently stronger toward the lower half.
+        const fade = smoothstep(0.04, 0.86, y01);
         if (fade <= 0.001) continue;
+
+        const scanY = reduced ? 0.62 : 0.62 + 0.08 * Math.sin(tt * 0.33);
+        const scan = smoothstep(
+          0,
+          1,
+          clamp01(1 - Math.abs(y01 - scanY) / 0.22),
+        );
 
         for (let gx = 0; gx < cols; gx++) {
           const x = gx * cell;
@@ -164,13 +171,12 @@ export function PixelGridField({
           const r2 = u32To01(hashU32(gx + 41, gy + 7, seed));
           const phase = r2 * Math.PI * 2;
 
-          // Calm shimmer: subtle opacity breathing, no visible "swimming".
           const shimmer = reduced
             ? 1
-            : 0.88 +
-              0.12 *
+            : 0.72 +
+              0.28 *
                 Math.sin(
-                  tt * 1.1 + phase + x01 * 0.7 * Math.PI + y01 * 1.1 * Math.PI,
+                  tt * 1.25 + phase + x01 * 0.7 * Math.PI + y01 * 1.1 * Math.PI,
                 );
 
           const edge =
@@ -179,10 +185,23 @@ export function PixelGridField({
           const a = baseAlpha * fade * edge * shimmer * (0.6 + 0.4 * r1);
           if (a <= 0.002) continue;
 
-          const isAccent = r1 > 0.985 && fade > 0.55;
-          ctx.fillStyle = isAccent ? highlight : base;
-          ctx.globalAlpha = isAccent ? a * 0.9 : a;
+          ctx.fillStyle = base;
+          ctx.globalAlpha = a;
           ctx.fillRect(x + inset, y + inset, px, px);
+
+          // Accent twinkles: sparse, slow, and localized to a soft sweep.
+          const pop = reduced
+            ? 0
+            : clamp01(
+                (Math.sin(tt * 1.8 + phase + (r1 - 0.5) * 2) - 0.78) / 0.22,
+              ) * scan;
+          if (pop > 0.001 && r1 > 0.93) {
+            const size = r1 > 0.985 ? 3 : 2;
+            const pad = Math.floor((cell - size) / 2);
+            ctx.fillStyle = highlight;
+            ctx.globalAlpha = a * (0.55 + 0.75 * pop);
+            ctx.fillRect(x + pad, y + pad, size, size);
+          }
         }
       }
 

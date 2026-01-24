@@ -37,28 +37,6 @@ function parseHslTriplet(value: string) {
   return { h, s, l };
 }
 
-function hslToRgba(h: number, s: number, l: number, a: number) {
-  const s01 = s / 100;
-  const l01 = l / 100;
-  const c = (1 - Math.abs(2 * l01 - 1)) * s01;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l01 - c / 2;
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  if (h >= 0 && h < 60) [r, g, b] = [c, x, 0];
-  else if (h >= 60 && h < 120) [r, g, b] = [x, c, 0];
-  else if (h >= 120 && h < 180) [r, g, b] = [0, c, x];
-  else if (h >= 180 && h < 240) [r, g, b] = [0, x, c];
-  else if (h >= 240 && h < 300) [r, g, b] = [x, 0, c];
-  else [r, g, b] = [c, 0, x];
-
-  const rr = Math.round((r + m) * 255);
-  const gg = Math.round((g + m) * 255);
-  const bb = Math.round((b + m) * 255);
-  return `rgba(${rr}, ${gg}, ${bb}, ${a})`;
-}
-
 export function NoiseField({
   className,
   intensity = 1,
@@ -110,32 +88,12 @@ export function NoiseField({
       }
 
       const styles = getComputedStyle(document.documentElement);
-      const fg = parseHslTriplet(styles.getPropertyValue("--foreground"));
       const bg = parseHslTriplet(styles.getPropertyValue("--background"));
       const isDark = bg.l < 50;
 
       ctx.clearRect(0, 0, width, height);
 
-      // 1) Ultra-subtle "fog" to avoid dead-flat surfaces.
-      // Keep it nearly monochrome and low-contrast.
-      const fog = ctx.createRadialGradient(
-        width * 0.18,
-        height * 0.22,
-        0,
-        width * 0.18,
-        height * 0.22,
-        Math.max(width, height) * 0.85,
-      );
-      const fogAlpha = (isDark ? 0.08 : 0.06) * (0.7 + 0.3 * intensity);
-      fog.addColorStop(
-        0,
-        hslToRgba(fg.h, Math.min(8, fg.s), isDark ? 92 : 8, fogAlpha),
-      );
-      fog.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = fog;
-      ctx.fillRect(0, 0, width, height);
-
-      // 2) Grain layer (high frequency, monochrome).
+      // Grain layer (high frequency, monochrome).
       // We draw a small tile then scale it across the canvas.
       const tile = 220;
       const tileCanvas = document.createElement("canvas");
@@ -145,9 +103,9 @@ export function NoiseField({
       if (tileCtx) {
         const img = tileCtx.createImageData(tile, tile);
         const data = img.data;
-        const grainA = Math.round((isDark ? 20 : 14) * grainIntensity); // 0..255
+        const grainA = Math.round((isDark ? 18 : 12) * grainIntensity); // 0..255
         for (let i = 0; i < data.length; i += 4) {
-          const v = Math.floor(prng() * 255);
+          const v = Math.floor(96 + prng() * 96);
           data[i + 0] = v;
           data[i + 1] = v;
           data[i + 2] = v;
@@ -157,12 +115,24 @@ export function NoiseField({
       }
 
       ctx.save();
-      ctx.globalAlpha = (isDark ? 0.55 : 0.45) * grainIntensity;
+      ctx.globalAlpha = (isDark ? 0.5 : 0.42) * grainIntensity;
       ctx.globalCompositeOperation = isDark ? "screen" : "multiply";
       const drift = reduced ? 0 : t;
       for (let y = -tile; y < height + tile; y += tile) {
         for (let x = -tile; x < width + tile; x += tile) {
           ctx.drawImage(tileCanvas, x + drift, y + drift);
+        }
+      }
+      ctx.restore();
+
+      // Micro-dither pass (breaks gradient banding without looking "grainy").
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = (isDark ? 0.06 : 0.045) * grainIntensity;
+      const drift2 = reduced ? 0 : t * 0.6;
+      for (let y = -tile; y < height + tile; y += tile) {
+        for (let x = -tile; x < width + tile; x += tile) {
+          ctx.drawImage(tileCanvas, x + drift2, y + drift2);
         }
       }
       ctx.restore();

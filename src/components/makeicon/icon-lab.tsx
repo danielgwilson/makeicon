@@ -613,22 +613,21 @@ export function IconLab() {
       <PixelGridField
         className={cn(
           "pointer-events-none fixed inset-0 z-0",
-          "opacity-[0.95] dark:opacity-[0.55]",
-          "[mask-image:linear-gradient(to_top,rgba(0,0,0,0.92),rgba(0,0,0,0.05)_58%,transparent_78%)]",
-          "[-webkit-mask-image:linear-gradient(to_top,rgba(0,0,0,0.92),rgba(0,0,0,0.05)_58%,transparent_78%)]",
+          "opacity-[0.9] dark:opacity-[0.5]",
+          "mix-blend-multiply dark:mix-blend-screen",
+          "[mask-image:radial-gradient(980px_620px_at_50%_58%,rgba(0,0,0,0.96),rgba(0,0,0,0.2)_64%,transparent_80%)]",
+          "[-webkit-mask-image:radial-gradient(980px_620px_at_50%_58%,rgba(0,0,0,0.96),rgba(0,0,0,0.2)_64%,transparent_80%)]",
         )}
         intensity={1}
       />
       <NoiseField
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.32] mix-blend-multiply dark:mix-blend-screen"
-        intensity={0.9}
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.44] mix-blend-multiply dark:mix-blend-screen"
+        intensity={0.75}
       />
-      <div
-        className={cn(
-          "pointer-events-none fixed inset-0 z-0",
-          "bg-[radial-gradient(900px_520px_at_18%_10%,hsl(var(--foreground)/0.08),transparent_60%),radial-gradient(800px_480px_at_74%_16%,hsl(var(--accent)/0.10),transparent_65%)]",
-        )}
-      />
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute -top-56 left-[8%] h-[520px] w-[780px] rounded-full bg-accent/25 blur-3xl opacity-60 mix-blend-multiply dark:opacity-45 dark:mix-blend-screen" />
+        <div className="absolute -top-40 right-[-140px] h-[520px] w-[520px] rounded-full bg-foreground/10 blur-3xl opacity-55 mix-blend-multiply dark:opacity-35 dark:mix-blend-screen" />
+      </div>
       <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-28 bg-gradient-to-b from-background via-background/70 to-transparent" />
 
       <header className="sticky top-0 z-20 border-b border-border/70 bg-background/75 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
