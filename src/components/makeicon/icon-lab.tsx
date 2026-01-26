@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DEFAULT_PACKS,
   type MakeIconPackId,
@@ -100,6 +101,10 @@ const PACK_BRAND: Partial<
   windows_tiles: { bg: "bg-[#0078D4]", fg: "text-white" },
   android_app_icons: { bg: "bg-[#3DDC84]", fg: "text-[#0b2614]" },
   figma_widget: { bg: "bg-[#F24E1E]", fg: "text-white" },
+  nextjs_app_router: { bg: "bg-foreground", fg: "text-background" },
+  vercel_integration: { bg: "bg-foreground", fg: "text-background" },
+  github_social_preview: { bg: "bg-foreground", fg: "text-background" },
+  notion_icon: { bg: "bg-foreground", fg: "text-background" },
 };
 
 function packAccent(packId: MakeIconPackId) {
@@ -113,6 +118,27 @@ function packBrand(packId: MakeIconPackId) {
       fg: "text-foreground",
     }
   );
+}
+
+const PACK_CHIP_LABEL: Record<MakeIconPackId, string> = {
+  web_favicon_pwa: "Web",
+  windows_tiles: "Windows",
+  nextjs_app_router: "Next.js",
+  chrome_extension: "Chrome",
+  firefox_addon: "Firefox",
+  vscode_extension: "VS Code",
+  slack_emoji: "Slack",
+  discord_emoji: "Discord",
+  ios_app_iconset: "iOS",
+  android_app_icons: "Android",
+  vercel_integration: "Vercel",
+  github_social_preview: "GitHub",
+  notion_icon: "Notion",
+  figma_widget: "Figma",
+};
+
+function packChipLabel(packId: MakeIconPackId) {
+  return PACK_CHIP_LABEL[packId];
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -381,6 +407,17 @@ export function IconLab() {
   const [urlValue, setUrlValue] = useState("");
   const [packQuery, setPackQuery] = useState("");
   const [isPackPickerOpen, setIsPackPickerOpen] = useState(false);
+  const [packTab, setPackTab] = useState<
+    | "all"
+    | "web"
+    | "frameworks"
+    | "extensions"
+    | "chat"
+    | "native"
+    | "dev"
+    | "docs"
+    | "design"
+  >("all");
   const [recentPacks, setRecentPacks] = useState<MakeIconPackId[]>([]);
   const [selected, setSelected] = useState<PackSelection>(() => ({
     ...DEFAULT_PACKS,
@@ -435,6 +472,29 @@ export function IconLab() {
     }
     return groups;
   }, [categoryOrder, visiblePacks]);
+
+  const packTabCategories = useMemo(() => {
+    switch (packTab) {
+      case "web":
+        return ["Web"] as const;
+      case "frameworks":
+        return ["Frameworks"] as const;
+      case "extensions":
+        return ["Extensions"] as const;
+      case "chat":
+        return ["Chat"] as const;
+      case "native":
+        return ["Native"] as const;
+      case "dev":
+        return ["Dev Platforms"] as const;
+      case "docs":
+        return ["Docs"] as const;
+      case "design":
+        return ["Design"] as const;
+      default:
+        return categoryOrder;
+    }
+  }, [categoryOrder, packTab]);
 
   const selectedPacks = useMemo(() => {
     const ids = (Object.keys(selected) as MakeIconPackId[]).filter(
@@ -740,15 +800,15 @@ export function IconLab() {
       <PixelGridField
         className={cn(
           "pointer-events-none fixed inset-0 z-0",
-          "opacity-[0.9] dark:opacity-[0.5]",
+          "opacity-[0.92] dark:opacity-[0.55]",
           "mix-blend-multiply dark:mix-blend-screen",
-          "[mask-image:radial-gradient(980px_620px_at_50%_58%,rgba(0,0,0,0.96),rgba(0,0,0,0.2)_64%,transparent_80%)]",
-          "[-webkit-mask-image:radial-gradient(980px_620px_at_50%_58%,rgba(0,0,0,0.96),rgba(0,0,0,0.2)_64%,transparent_80%)]",
+          "[mask-image:radial-gradient(1100px_720px_at_50%_86%,rgba(0,0,0,0.95),rgba(0,0,0,0.35)_58%,transparent_82%)]",
+          "[-webkit-mask-image:radial-gradient(1100px_720px_at_50%_86%,rgba(0,0,0,0.95),rgba(0,0,0,0.35)_58%,transparent_82%)]",
         )}
         intensity={1}
       />
       <NoiseField
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.44] mix-blend-multiply dark:mix-blend-screen"
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.54] mix-blend-multiply dark:mix-blend-screen"
         intensity={0.75}
       />
       <div className="pointer-events-none fixed inset-0 z-0">
@@ -909,12 +969,19 @@ export function IconLab() {
                               className={cn("size-4", brand.fg)}
                             />
                           </span>
-                          <span className="text-[13px] font-medium">
-                            {PACKS[packId].name}
+                          <span className="max-w-[150px] truncate text-[13px] font-medium">
+                            {packChipLabel(packId)}
                           </span>
                         </button>
                       );
                     })}
+                  </div>
+                  <div className="mt-2 text-[12px] leading-5 text-muted-foreground">
+                    Tip: click chips to add/remove. Use{" "}
+                    <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
+                      Browse packs
+                    </span>{" "}
+                    for everything else.
                   </div>
                   {recentPacks.length ? (
                     <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground/80">
@@ -1244,10 +1311,76 @@ export function IconLab() {
                   className="bg-background/70"
                 />
               </div>
+
+              <Tabs
+                value={packTab}
+                onValueChange={(v) => setPackTab(v as typeof packTab)}
+                className="mt-4"
+              >
+                <div className="overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
+                  <TabsList className="h-10 w-max rounded-full bg-background/40 p-1">
+                    <TabsTrigger
+                      value="all"
+                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                    >
+                      All
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="web"
+                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                    >
+                      Web
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="frameworks"
+                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                    >
+                      Frameworks
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="extensions"
+                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                    >
+                      Extensions
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="chat"
+                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                    >
+                      Chat
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="native"
+                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                    >
+                      Native
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="dev"
+                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                    >
+                      Dev
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="docs"
+                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                    >
+                      Docs
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="design"
+                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                    >
+                      Design
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+              </Tabs>
             </div>
+
             <div className="max-h-[60vh] overflow-y-auto p-6">
               <div className="grid gap-6">
-                {categoryOrder.map((category) => {
+                {packTabCategories.map((category) => {
                   const packs = packsByCategory.get(category) ?? [];
                   if (!packs.length) return null;
                   return (

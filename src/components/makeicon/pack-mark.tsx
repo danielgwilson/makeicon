@@ -86,6 +86,30 @@ const MARKS: Partial<Record<MakeIconPackId, SvgFactory>> = {
       />
     </svg>
   ),
+  slack_emoji: (props) => (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        d="M6.79 14.77a2.3 2.3 0 1 1-2.3 2.3v-.58a2.3 2.3 0 0 1 2.3-2.3h.58v.58a2.3 2.3 0 0 1-2.3 2.3Zm1.16 0a2.3 2.3 0 0 1 4.6 0v6.93a2.3 2.3 0 1 1-4.6 0v-6.93Zm1.16-9.54a2.3 2.3 0 1 1 2.3-2.3v.58a2.3 2.3 0 0 1-2.3 2.3h-.58v-.58a2.3 2.3 0 0 1 2.3-2.3Zm0 1.16a2.3 2.3 0 0 1 0 4.6H2.18a2.3 2.3 0 1 1 0-4.6h6.93Zm14.89 3.7a2.3 2.3 0 1 1 2.3-2.3v.58a2.3 2.3 0 0 1-2.3 2.3h-.58v-.58a2.3 2.3 0 0 1 2.3-2.3Zm-1.16 0a2.3 2.3 0 0 1 0 4.6h-6.93a2.3 2.3 0 1 1 0-4.6h6.93Zm-3.7 14.89a2.3 2.3 0 1 1-2.3 2.3v-.58a2.3 2.3 0 0 1 2.3-2.3h.58v.58a2.3 2.3 0 0 1-2.3 2.3Zm0-1.16a2.3 2.3 0 0 1-4.6 0v-6.93a2.3 2.3 0 1 1 4.6 0v6.93Z"
+        fill="currentColor"
+      />
+    </svg>
+  ),
+  vscode_extension: (props) => (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        d="M17.4 2.2 9.2 9.7 4.8 6.4 2 8.9l4 3.1-4 3.1 2.8 2.5 4.4-3.3 8.2 7.5 4.6-2.3V4.5zM17.1 6.2v11.6L11.5 12z"
+        fill="currentColor"
+      />
+    </svg>
+  ),
+  windows_tiles: (props) => (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        d="M2 3.5 11 2.2v9.2H2V3.5Zm10 8h10V1l-10 1.4v9.1ZM2 20.5l9 1.3v-9.1H2v7.8Zm10 1.4L22 23V12.6H12v9.3Z"
+        fill="currentColor"
+      />
+    </svg>
+  ),
 };
 
 export function PackMark({

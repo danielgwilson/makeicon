@@ -131,8 +131,9 @@ export function PixelGridField({
       const cols = Math.ceil(width / cell) + 1;
       const rows = Math.ceil(height / cell) + 1;
 
-      const tt = reduced ? 0 : t * 0.004;
-      const baseAlpha = (isDark ? 0.14 : 0.18) * (0.6 + 0.4 * intensity);
+      // Slightly faster shimmer so it feels alive (but still texture-like).
+      const tt = reduced ? 0 : t * 0.02;
+      const baseAlpha = (isDark ? 0.16 : 0.22) * (0.6 + 0.4 * intensity);
       const base = hslToRgba(ink.h, Math.min(18, ink.s), isDark ? 88 : 22, 1);
       const highlight = hslToRgba(
         accent.h,
@@ -210,7 +211,7 @@ export function PixelGridField({
 
     const loop = (ms: number) => {
       // Low framerate keeps it texture-like, not "animated background".
-      if (ms - lastMs >= 100) {
+      if (ms - lastMs >= 66) {
         lastMs = ms;
         t = (t + 1) % 100_000;
         repaint();
