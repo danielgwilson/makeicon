@@ -71,8 +71,8 @@
   --muted: 32 18% 92%;
   --muted-foreground: 25 8% 42%;
 
-  /* Amber accent, used intentionally */
-  --accent: 38 92% 48%;
+  /* Cool accent (teal) */
+  --accent: 174 78% 34%;
   --accent-foreground: 40 28% 98%;
 
   --destructive: 0 84% 60%;
@@ -102,7 +102,7 @@
   --muted: 24 10% 14%;
   --muted-foreground: 40 10% 64%;
 
-  --accent: 38 92% 55%;
+  --accent: 174 78% 52%;
   --accent-foreground: 24 10% 6%;
 
   --destructive: 0 62% 50%;
