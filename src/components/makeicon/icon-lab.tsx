@@ -425,6 +425,31 @@ export function IconLab() {
 
   const [prefsLoaded, setPrefsLoaded] = useState(false);
 
+  useEffect(() => {
+    const updateViewport = () => {
+      const h = window.visualViewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty(
+        "--viewport-height",
+        `${Math.floor(h)}px`,
+      );
+    };
+
+    updateViewport();
+    window.addEventListener("resize", updateViewport, { passive: true });
+    window.addEventListener("orientationchange", updateViewport, {
+      passive: true,
+    });
+    window.visualViewport?.addEventListener("resize", updateViewport, {
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.removeEventListener("orientationchange", updateViewport);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+    };
+  }, []);
+
   const categoryOrder = useMemo(
     () =>
       [
@@ -947,39 +972,42 @@ export function IconLab() {
                       {selectedPacks.length} selected
                     </div>
                   </div>
-                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
-                    {quickPacks.slice(0, 10).map((packId) => {
-                      const brand = packBrand(packId);
-                      const isOn = Boolean(selected[packId]);
-                      return (
-                        <button
-                          key={packId}
-                          type="button"
-                          aria-pressed={isOn}
-                          className={cn(
-                            "group inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-left transition",
-                            "border-border/70 bg-background/55 hover:bg-background/80",
-                            isOn ? "border-foreground/18" : null,
-                          )}
-                          onClick={() => togglePack(packId)}
-                        >
-                          <span
+                  <div className="relative mt-3">
+                    <div className="flex gap-2 overflow-x-auto pb-1 pr-8 [-webkit-overflow-scrolling:touch]">
+                      {quickPacks.slice(0, 10).map((packId) => {
+                        const brand = packBrand(packId);
+                        const isOn = Boolean(selected[packId]);
+                        return (
+                          <button
+                            key={packId}
+                            type="button"
+                            aria-pressed={isOn}
                             className={cn(
-                              "grid size-7 place-items-center rounded-full shadow-sm",
-                              brand.bg,
+                              "group inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-left transition",
+                              "border-border/70 bg-background/55 hover:bg-background/80",
+                              isOn ? "border-foreground/18" : null,
                             )}
+                            onClick={() => togglePack(packId)}
                           >
-                            <PackMark
-                              packId={packId}
-                              className={cn("size-4", brand.fg)}
-                            />
-                          </span>
-                          <span className="max-w-[150px] truncate text-[13px] font-medium">
-                            {packChipLabel(packId)}
-                          </span>
-                        </button>
-                      );
-                    })}
+                            <span
+                              className={cn(
+                                "grid size-7 place-items-center rounded-full shadow-sm",
+                                brand.bg,
+                              )}
+                            >
+                              <PackMark
+                                packId={packId}
+                                className={cn("size-4", brand.fg)}
+                              />
+                            </span>
+                            <span className="max-w-[150px] truncate text-[13px] font-medium">
+                              {packChipLabel(packId)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background/70 to-transparent" />
                   </div>
                   <div className="mt-2 hidden text-[12px] leading-5 text-muted-foreground sm:block">
                     Tip: click chips to add/remove. Use{" "}
@@ -1066,12 +1094,12 @@ export function IconLab() {
                             Or paste with ⌘/Ctrl+V, or load a URL. You’ll get a
                             zip that matches real platform constraints.
                           </div>
-                          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-5">
+                          <div className="mt-4 flex w-full max-w-[260px] flex-col items-center justify-center gap-2 sm:mt-5 sm:max-w-none sm:flex-row sm:flex-wrap">
                             <Button
                               onClick={onPickFile}
                               disabled={isLoading}
                               variant="brand"
-                              className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                              className="w-full rounded-full font-mono text-[12px] uppercase tracking-[0.18em] sm:w-auto"
                             >
                               {isLoading ? (
                                 <Loader2 className="mr-2 size-4 animate-spin" />
@@ -1083,7 +1111,7 @@ export function IconLab() {
                               variant="outline"
                               onClick={pasteFromClipboard}
                               disabled={isLoading}
-                              className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                              className="w-full rounded-full font-mono text-[12px] uppercase tracking-[0.18em] sm:w-auto"
                             >
                               Paste image
                             </Button>
@@ -1322,7 +1350,7 @@ export function IconLab() {
                 onValueChange={(v) => setPackTab(v as typeof packTab)}
                 className="mt-4"
               >
-                <div className="overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
+                <div className="relative overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
                   <TabsList className="h-10 w-max rounded-full bg-background/40 p-1">
                     <TabsTrigger
                       value="all"
@@ -1379,6 +1407,7 @@ export function IconLab() {
                       Design
                     </TabsTrigger>
                   </TabsList>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background/75 to-transparent" />
                 </div>
               </Tabs>
             </div>
