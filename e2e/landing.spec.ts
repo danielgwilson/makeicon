@@ -8,6 +8,37 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(scrollWidth).toBeLessThanOrEqual(innerWidth + 1);
 }
 
+async function expectDropzoneAboveFold(page: Page) {
+  const visiblePx = await page.evaluate(() => {
+    const nodes = Array.from(document.querySelectorAll("*"));
+    const drop = nodes.find(
+      (el): el is HTMLElement =>
+        el instanceof HTMLElement &&
+        (el.textContent || "").trim() === "Drop an image.",
+    );
+
+    let zone: HTMLElement | null = null;
+    if (drop) {
+      let p: HTMLElement | null = drop;
+      for (let i = 0; i < 8 && p; i++) {
+        const cls = p.getAttribute("class") || "";
+        if (cls.includes("border-dashed") || cls.includes("min-h-")) {
+          zone = p;
+          break;
+        }
+        p = p.parentElement;
+      }
+    }
+
+    if (!zone) return 0;
+    const rect = zone.getBoundingClientRect();
+    const h = window.innerHeight;
+    return Math.max(0, Math.min(h, rect.bottom) - Math.max(0, rect.top));
+  });
+
+  expect(visiblePx).toBeGreaterThan(200);
+}
+
 async function expectPixelGridNotBlank(page: Page) {
   const alphaSum = await page.evaluate(() => {
     const el = document.querySelector('[data-testid="pixel-grid-field"]');
@@ -56,6 +87,7 @@ test.describe("landing", () => {
     await page.waitForTimeout(250);
 
     await expectNoHorizontalOverflow(page);
+    await expectDropzoneAboveFold(page);
     await expectPixelGridNotBlank(page);
 
     await page.screenshot({
@@ -76,6 +108,7 @@ test.describe("landing", () => {
     await page.waitForTimeout(250);
 
     await expectNoHorizontalOverflow(page);
+    await expectDropzoneAboveFold(page);
     await expectPixelGridNotBlank(page);
 
     await page.screenshot({

@@ -5,7 +5,6 @@ import { Buffer } from "buffer";
 import { zipSync } from "fflate";
 import {
   ArrowRight,
-  ClipboardPaste,
   Download,
   Link2,
   Loader2,
@@ -24,14 +23,19 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { NoiseField } from "@/components/makeicon/noise-field";
-import { PackIcon } from "@/components/makeicon/pack-icon";
+import { PackMark } from "@/components/makeicon/pack-mark";
 import { PixelGridField } from "@/components/makeicon/pixel-grid-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DEFAULT_PACKS,
   type MakeIconPackId,
@@ -55,6 +59,19 @@ type LoadedSource = {
 
 type ZipFile = { path: string; bytes: Uint8Array };
 
+const STORAGE_SELECTION = "makeicon.selection.v1";
+const STORAGE_RECENTS = "makeicon.recentPacks.v1";
+const MAX_RECENTS = 10;
+
+const POPULAR_PACKS: MakeIconPackId[] = [
+  "web_favicon_pwa",
+  "nextjs_app_router",
+  "chrome_extension",
+  "slack_emoji",
+  "vercel_integration",
+  "github_social_preview",
+];
+
 const PACK_ACCENT: Partial<Record<MakeIconPackId, string>> = {
   slack_emoji: "group-hover:text-[#4A154B]",
   discord_emoji: "group-hover:text-[#5865F2]",
@@ -72,8 +89,30 @@ const PACK_ACCENT: Partial<Record<MakeIconPackId, string>> = {
   web_favicon_pwa: "group-hover:text-foreground",
 };
 
+const PACK_BRAND: Partial<
+  Record<MakeIconPackId, { bg: string; fg: string; stroke?: string }>
+> = {
+  slack_emoji: { bg: "bg-[#4A154B]", fg: "text-white" },
+  discord_emoji: { bg: "bg-[#5865F2]", fg: "text-white" },
+  chrome_extension: { bg: "bg-[#4285F4]", fg: "text-white" },
+  firefox_addon: { bg: "bg-[#FF7139]", fg: "text-white" },
+  vscode_extension: { bg: "bg-[#007ACC]", fg: "text-white" },
+  windows_tiles: { bg: "bg-[#0078D4]", fg: "text-white" },
+  android_app_icons: { bg: "bg-[#3DDC84]", fg: "text-[#0b2614]" },
+  figma_widget: { bg: "bg-[#F24E1E]", fg: "text-white" },
+};
+
 function packAccent(packId: MakeIconPackId) {
   return PACK_ACCENT[packId] ?? "group-hover:text-foreground";
+}
+
+function packBrand(packId: MakeIconPackId) {
+  return (
+    PACK_BRAND[packId] ?? {
+      bg: "bg-foreground/10 dark:bg-foreground/12",
+      fg: "text-foreground",
+    }
+  );
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -89,6 +128,15 @@ function downloadBlob(blob: Blob, filename: string) {
 function safeBaseName(name: string) {
   const stripped = name.replace(/\.[^/.]+$/, "");
   return stripped.replaceAll(/[^a-zA-Z0-9._-]+/g, "-").replaceAll(/-+/g, "-");
+}
+
+function safeJsonParse<T>(value: string | null): T | null {
+  if (!value) return null;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
 }
 
 async function blobToBytes(blob: Blob) {
@@ -279,13 +327,19 @@ async function buildZip(files: ZipFile[]) {
 }
 
 function packTitle(pack: MakeIconPackSpec) {
+  const brand = packBrand(pack.id);
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 items-start gap-3">
-        <div className="mt-0.5 grid size-9 place-items-center rounded-2xl border border-border/70 bg-background/45 text-muted-foreground transition group-hover:scale-[1.03] group-hover:bg-background/70">
-          <PackIcon
+        <div
+          className={cn(
+            "mt-0.5 grid size-9 place-items-center rounded-2xl border border-border/70 shadow-sm transition group-hover:scale-[1.03]",
+            brand.bg,
+          )}
+        >
+          <PackMark
             packId={pack.id}
-            className={cn("transition", packAccent(pack.id))}
+            className={cn("size-5", brand.fg, packAccent(pack.id))}
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -326,9 +380,13 @@ export function IconLab() {
 
   const [urlValue, setUrlValue] = useState("");
   const [packQuery, setPackQuery] = useState("");
+  const [isPackPickerOpen, setIsPackPickerOpen] = useState(false);
+  const [recentPacks, setRecentPacks] = useState<MakeIconPackId[]>([]);
   const [selected, setSelected] = useState<PackSelection>(() => ({
     ...DEFAULT_PACKS,
   }));
+
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
 
   const categoryOrder = useMemo(
     () =>
@@ -385,6 +443,40 @@ export function IconLab() {
     return ids.map((k) => PACKS[k]);
   }, [selected]);
 
+  const togglePack = useCallback((packId: MakeIconPackId) => {
+    setSelected((prev) => ({ ...prev, [packId]: !prev[packId] }));
+    setRecentPacks((prev) => {
+      const next = [packId, ...prev.filter((p) => p !== packId)].filter((p) =>
+        Boolean(PACKS[p]),
+      );
+      const trimmed = next.slice(0, MAX_RECENTS);
+      try {
+        localStorage.setItem(STORAGE_RECENTS, JSON.stringify(trimmed));
+      } catch {
+        // ignore
+      }
+      return trimmed;
+    });
+  }, []);
+
+  const quickPacks = useMemo(() => {
+    const seen = new Set<MakeIconPackId>();
+    const out: MakeIconPackId[] = [];
+    for (const id of recentPacks) {
+      if (!PACKS[id]) continue;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+    for (const id of POPULAR_PACKS) {
+      if (!PACKS[id]) continue;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+    return out;
+  }, [recentPacks]);
+
   const plannedPaths = useMemo(() => {
     const multi = selectedPacks.length > 1;
     const paths: string[] = [];
@@ -394,6 +486,41 @@ export function IconLab() {
     }
     return paths;
   }, [selectedPacks]);
+
+  useEffect(() => {
+    try {
+      const saved = safeJsonParse<Partial<PackSelection>>(
+        localStorage.getItem(STORAGE_SELECTION),
+      );
+      if (saved) {
+        const next: PackSelection = { ...DEFAULT_PACKS };
+        for (const id of Object.keys(DEFAULT_PACKS) as MakeIconPackId[]) {
+          const v = saved[id];
+          if (typeof v === "boolean") next[id] = v;
+        }
+        setSelected(next);
+      }
+
+      const savedRecent =
+        safeJsonParse<MakeIconPackId[]>(
+          localStorage.getItem(STORAGE_RECENTS),
+        ) ?? [];
+      setRecentPacks(savedRecent.filter((p) => Boolean(PACKS[p])));
+    } catch {
+      // ignore
+    }
+
+    setPrefsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!prefsLoaded) return;
+    try {
+      localStorage.setItem(STORAGE_SELECTION, JSON.stringify(selected));
+    } catch {
+      // ignore
+    }
+  }, [prefsLoaded, selected]);
 
   const cleanupSource = useCallback((s: LoadedSource | null) => {
     if (!s) return;
@@ -668,9 +795,9 @@ export function IconLab() {
         </div>
       </header>
 
-      <main className="container relative z-10 pt-10 pb-24">
-        <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="grid gap-8">
+      <main className="container relative z-10 pt-8 pb-24">
+        <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+          <div className="order-2 grid gap-6 lg:order-1">
             <div className="grid gap-5">
               <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] uppercase tracking-[0.32em] text-muted-foreground">
                 <span className="inline-flex items-center gap-2">
@@ -681,12 +808,12 @@ export function IconLab() {
                 <span>drop · paste · url</span>
               </div>
               <h1 className="leading-[0.9] tracking-tight text-balance">
-                <span className="block font-[family-name:var(--font-display)] text-5xl italic sm:text-6xl lg:text-7xl">
+                <span className="block font-[family-name:var(--font-display)] text-4xl italic sm:text-5xl lg:text-6xl">
                   Icons for
                 </span>
                 <span
                   className={cn(
-                    "mt-1 block font-[family-name:var(--font-body)] text-5xl font-semibold sm:text-6xl lg:text-7xl",
+                    "mt-1 block font-[family-name:var(--font-body)] text-4xl font-semibold sm:text-5xl lg:text-6xl",
                     "text-transparent tracking-[-0.06em]",
                     "[-webkit-text-stroke:1px_hsl(var(--foreground))]",
                     "dark:[-webkit-text-stroke:1px_hsl(var(--foreground)/0.85)]",
@@ -695,38 +822,109 @@ export function IconLab() {
                   real deployments
                 </span>
               </h1>
-              <p className="max-w-[60ch] text-sm leading-6 text-muted-foreground sm:text-base">
+              <p className="max-w-[62ch] text-sm leading-6 text-muted-foreground sm:text-base">
                 Drop one image. Pick the target scenario. Download a zip that’s
                 picky about sizes, filenames, and platform quirks.
               </p>
+              <div className="rounded-3xl border border-border/70 bg-background/45 p-5">
+                <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+                  What are you making?
+                </div>
+                <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span className="size-1.5 rounded-full bg-accent" />
+                    Favicons + PWA
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="size-1.5 rounded-full bg-accent/70" />
+                    Next.js app router icons
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="size-1.5 rounded-full bg-accent/45" />
+                    Slack/Discord emoji sets
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="size-1.5 rounded-full bg-accent/35" />
+                    Marketplace / preview images
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
 
+          <div className="order-1 lg:order-2">
             <Card className="overflow-hidden border-border/70 bg-card/70 p-0 shadow-[0_28px_120px_hsl(var(--foreground)/0.06)] backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
               <div className="border-b border-border/70 bg-background/40 px-6 py-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
-                      Input
+                      Start here
                     </div>
                     <div className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Drag & drop, paste, or load from a URL.
+                      Pick a target format, then drop an image.
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge
-                      variant="secondary"
-                      className="rounded-full font-mono text-[11px] uppercase tracking-[0.14em]"
-                    >
-                      <ClipboardPaste className="mr-1 size-3.5" /> Paste
-                      (⌘/Ctrl+V)
-                    </Badge>
-                    <Badge
-                      variant="secondary"
-                      className="rounded-full font-mono text-[11px] uppercase tracking-[0.14em]"
-                    >
-                      PNG · JPG · WebP · AVIF · SVG
-                    </Badge>
+                  <Button
+                    variant="outline"
+                    className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                    onClick={() => setIsPackPickerOpen(true)}
+                  >
+                    Browse packs
+                  </Button>
+                </div>
+
+                <div className="mt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
+                      Make icons for
+                    </div>
+                    <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
+                      {selectedPacks.length} selected
+                    </div>
                   </div>
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
+                    {quickPacks.slice(0, 10).map((packId) => {
+                      const brand = packBrand(packId);
+                      const isOn = Boolean(selected[packId]);
+                      return (
+                        <button
+                          key={packId}
+                          type="button"
+                          aria-pressed={isOn}
+                          className={cn(
+                            "group inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-left transition",
+                            "border-border/70 bg-background/55 hover:bg-background/80",
+                            isOn ? "border-foreground/18" : null,
+                          )}
+                          onClick={() => togglePack(packId)}
+                        >
+                          <span
+                            className={cn(
+                              "grid size-7 place-items-center rounded-full shadow-sm",
+                              brand.bg,
+                            )}
+                          >
+                            <PackMark
+                              packId={packId}
+                              className={cn("size-4", brand.fg)}
+                            />
+                          </span>
+                          <span className="text-[13px] font-medium">
+                            {PACKS[packId].name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {recentPacks.length ? (
+                    <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground/80">
+                      Recent:{" "}
+                      {recentPacks
+                        .slice(0, 5)
+                        .map((p) => PACKS[p].name)
+                        .join(" · ")}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -776,7 +974,7 @@ export function IconLab() {
 
                     <div
                       className={cn(
-                        "group relative grid min-h-[280px] place-items-center overflow-hidden rounded-2xl border border-dashed",
+                        "group relative grid min-h-[320px] place-items-center overflow-hidden rounded-2xl border border-dashed",
                         "border-border/70 bg-background/40 transition",
                         isDragging
                           ? "border-foreground/40 bg-muted/50 shadow-[0_0_0_6px_hsl(var(--foreground)/0.05)]"
@@ -829,7 +1027,7 @@ export function IconLab() {
                                   alt="Input"
                                   width={Math.min(900, source.width)}
                                   height={Math.min(900, source.height)}
-                                  className="max-h-[320px] w-auto max-w-full object-contain"
+                                  className="max-h-[340px] w-auto max-w-full object-contain"
                                   unoptimized
                                   priority
                                 />
@@ -913,18 +1111,27 @@ export function IconLab() {
               </div>
             </Card>
           </div>
+        </div>
 
-          <Card className="overflow-hidden border-border/70 bg-card/70 p-0 shadow-[0_28px_120px_hsl(var(--foreground)/0.06)] backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:delay-150">
-            <div className="border-b border-border/70 bg-background/40 px-6 py-5">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
-                    Export
-                  </div>
-                  <div className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Pick a pack. Download a zip.
-                  </div>
+        <Card className="mt-10 overflow-hidden border-border/70 bg-card/70 p-0 shadow-[0_28px_120px_hsl(var(--foreground)/0.06)] backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:delay-150">
+          <div className="border-b border-border/70 bg-background/40 px-6 py-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+                  Export
                 </div>
+                <div className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Select packs, then download a zip.
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                  onClick={() => setIsPackPickerOpen(true)}
+                >
+                  Add formats
+                </Button>
                 <Button
                   variant="brand"
                   onClick={downloadSelectedZip}
@@ -942,10 +1149,42 @@ export function IconLab() {
                 </Button>
               </div>
             </div>
+          </div>
 
-            <div className="px-6 py-6">
+          <div className="px-6 py-6">
+            <div className="grid gap-4">
+              <div className="flex flex-wrap gap-2">
+                {selectedPacks.map((pack) => {
+                  const brand = packBrand(pack.id);
+                  return (
+                    <button
+                      key={pack.id}
+                      type="button"
+                      className="group inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/40 px-3 py-2 text-left transition hover:bg-background/70"
+                      onClick={() => togglePack(pack.id)}
+                      title="Click to remove"
+                    >
+                      <span
+                        className={cn(
+                          "grid size-6 place-items-center rounded-full shadow-sm",
+                          brand.bg,
+                        )}
+                      >
+                        <PackMark
+                          packId={pack.id}
+                          className={cn("size-3.5", brand.fg)}
+                        />
+                      </span>
+                      <span className="text-[13px] font-medium">
+                        {pack.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
               {source ? (
-                <div className="mb-6 grid gap-2 rounded-3xl border border-border/70 bg-background/35 p-5 shadow-[0_18px_70px_hsl(var(--foreground)/0.05)]">
+                <div className="grid gap-2 rounded-3xl border border-border/70 bg-background/35 p-5 shadow-[0_18px_70px_hsl(var(--foreground)/0.05)]">
                   <div className="flex items-center justify-between gap-3">
                     <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
                       Included
@@ -959,144 +1198,106 @@ export function IconLab() {
                     </Badge>
                   </div>
                   <div className="grid gap-1 font-mono text-[11px] leading-5 text-muted-foreground">
-                    {plannedPaths.slice(0, 10).map((p) => (
+                    {plannedPaths.slice(0, 8).map((p) => (
                       <div key={p} className="truncate">
                         {p}
                       </div>
                     ))}
-                    {plannedPaths.length > 10 ? (
+                    {plannedPaths.length > 8 ? (
                       <div className="text-xs">
-                        + {plannedPaths.length - 10} more…
+                        + {plannedPaths.length - 8} more…
                       </div>
                     ) : null}
                   </div>
                 </div>
-              ) : null}
-
-              <Tabs defaultValue="packs" className="w-full">
-                <TabsList className="grid h-10 w-full grid-cols-2 rounded-full border border-border/70 bg-background/45 p-1">
-                  <TabsTrigger
-                    value="packs"
-                    className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
-                  >
-                    Packs
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="notes"
-                    className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
-                  >
-                    Notes
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="packs" className="mt-4">
-                  <div className="grid min-w-0 gap-3">
-                    <div className="grid min-w-0 gap-2">
-                      <Label
-                        htmlFor={`${id}-pack-search`}
-                        className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground"
-                      >
-                        Find a pack
-                      </Label>
-                      <Input
-                        id={`${id}-pack-search`}
-                        placeholder="Try: next, ios, slack, vercel…"
-                        value={packQuery}
-                        onChange={(e) => setPackQuery(e.target.value)}
-                        className="bg-background/60"
-                      />
-                    </div>
-
-                    {categoryOrder.map((category) => {
-                      const packs = packsByCategory.get(category) ?? [];
-                      if (!packs.length) return null;
-                      return (
-                        <div key={category} className="grid min-w-0 gap-3">
-                          <div className="mt-2 font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
-                            {category}
-                          </div>
-                          {packs.map((pack) => {
-                            const isOn = Boolean(selected[pack.id]);
-                            return (
-                              <button
-                                key={pack.id}
-                                type="button"
-                                className={cn(
-                                  "group relative w-full min-w-0 rounded-3xl border p-5 text-left transition",
-                                  "bg-background/30 border-border/70",
-                                  "hover:-translate-y-0.5 hover:border-foreground/18 hover:bg-background/45 hover:shadow-[0_20px_90px_hsl(var(--foreground)/0.08)] active:translate-y-0",
-                                  isOn
-                                    ? "border-foreground/20 bg-background/55 shadow-[0_22px_90px_hsl(var(--foreground)/0.06)]"
-                                    : null,
-                                )}
-                                onClick={() =>
-                                  setSelected((prev) => ({
-                                    ...prev,
-                                    [pack.id]: !prev[pack.id],
-                                  }))
-                                }
-                              >
-                                {packTitle(pack)}
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                  <Badge
-                                    variant={isOn ? "default" : "secondary"}
-                                    className="rounded-full"
-                                  >
-                                    {isOn ? "Included" : "Not included"}
-                                  </Badge>
-                                  <Badge
-                                    variant="secondary"
-                                    className="rounded-full"
-                                  >
-                                    {pack.filesSummary}
-                                  </Badge>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="notes" className="mt-4">
-                  <div className="grid gap-4 text-sm leading-6 text-muted-foreground">
-                    <div>
-                      <div className="font-medium text-foreground">
-                        No surprises
-                      </div>
-                      <div className="mt-1">
-                        Exports are generated locally in your browser (no
-                        upload). URL imports try a direct fetch first, then fall
-                        back to a safe proxy if CORS blocks it.
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-medium text-foreground">
-                        Favicon reality check
-                      </div>
-                      <div className="mt-1">
-                        Not every platform honors every icon. The “Web (favicon
-                        + PWA)” pack aims for modern defaults that work across
-                        Next.js and Vercel.
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-medium text-foreground">
-                        Got a weird edge case?
-                      </div>
-                      <div className="mt-1">
-                        That’s the point. MakeIcon is built around “non-obvious”
-                        scenarios and aggressively practical output sets.
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
+              ) : (
+                <div className="rounded-3xl border border-border/70 bg-background/35 p-5 text-sm leading-6 text-muted-foreground">
+                  Exports run locally in your browser (no upload). URL imports
+                  try a direct fetch first, then fall back to a safe proxy if
+                  CORS blocks it.
+                </div>
+              )}
             </div>
-          </Card>
-        </div>
+          </div>
+        </Card>
+
+        <Dialog open={isPackPickerOpen} onOpenChange={setIsPackPickerOpen}>
+          <DialogContent className="max-w-3xl overflow-hidden p-0">
+            <div className="border-b border-border/70 bg-background/60 p-6">
+              <DialogHeader className="text-left">
+                <DialogTitle className="font-[family-name:var(--font-display)] text-2xl italic">
+                  All packs
+                </DialogTitle>
+              </DialogHeader>
+              <div className="mt-4 grid gap-2">
+                <Label
+                  htmlFor={`${id}-pack-search`}
+                  className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground"
+                >
+                  Search
+                </Label>
+                <Input
+                  id={`${id}-pack-search`}
+                  placeholder="Try: next, slack, vercel, ios…"
+                  value={packQuery}
+                  onChange={(e) => setPackQuery(e.target.value)}
+                  className="bg-background/70"
+                />
+              </div>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto p-6">
+              <div className="grid gap-6">
+                {categoryOrder.map((category) => {
+                  const packs = packsByCategory.get(category) ?? [];
+                  if (!packs.length) return null;
+                  return (
+                    <div key={category} className="grid gap-3">
+                      <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+                        {category}
+                      </div>
+                      <div className="grid gap-2">
+                        {packs.map((pack) => {
+                          const isOn = Boolean(selected[pack.id]);
+                          return (
+                            <button
+                              key={pack.id}
+                              type="button"
+                              className={cn(
+                                "group relative w-full min-w-0 rounded-3xl border p-5 text-left transition",
+                                "border-border/70 bg-background/30",
+                                "hover:border-foreground/18 hover:bg-background/50 hover:shadow-[0_20px_90px_hsl(var(--foreground)/0.08)]",
+                                isOn
+                                  ? "border-foreground/22 bg-background/65 shadow-[0_22px_90px_hsl(var(--foreground)/0.06)]"
+                                  : null,
+                              )}
+                              onClick={() => togglePack(pack.id)}
+                            >
+                              {packTitle(pack)}
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <Badge
+                                  variant={isOn ? "default" : "secondary"}
+                                  className="rounded-full font-mono text-[11px] uppercase tracking-[0.14em]"
+                                >
+                                  {isOn ? "Included" : "Not included"}
+                                </Badge>
+                                <Badge
+                                  variant="secondary"
+                                  className="rounded-full font-mono text-[11px] uppercase tracking-[0.14em]"
+                                >
+                                  {pack.filesSummary}
+                                </Badge>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <footer className="mt-16 border-t border-border/70 pt-10">
           <div className="flex flex-col items-start justify-between gap-6 text-muted-foreground md:flex-row md:items-end">
