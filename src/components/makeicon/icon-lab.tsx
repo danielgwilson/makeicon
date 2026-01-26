@@ -818,7 +818,7 @@ export function IconLab() {
       <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-28 bg-gradient-to-b from-background via-background/70 to-transparent" />
 
       <header className="sticky top-0 z-20 border-b border-border/70 bg-background/75 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="container flex items-center justify-between gap-3 py-3 sm:py-4">
           <div className="flex min-w-0 items-center gap-3">
             <div className="grid size-10 place-items-center rounded-2xl border border-border/70 bg-background shadow-[0_18px_90px_hsl(var(--foreground)/0.06)]">
               <Sparkles className="size-5" />
@@ -827,12 +827,12 @@ export function IconLab() {
               <div className="font-[family-name:var(--font-display)] text-[22px] leading-none tracking-tight italic">
                 makeicon
               </div>
-              <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.26em] text-muted-foreground">
+              <div className="mt-1 hidden font-mono text-[11px] uppercase tracking-[0.26em] text-muted-foreground sm:block">
                 one image → the exact icons you need
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
@@ -840,7 +840,7 @@ export function IconLab() {
               disabled={isLoading}
             >
               <Upload className="mr-2 size-4" />
-              Pick file
+              <span className="hidden sm:inline">Pick file</span>
             </Button>
             <Button
               variant="ghost"
@@ -849,15 +849,15 @@ export function IconLab() {
               disabled={!hasSource}
             >
               <RotateCcw className="mr-2 size-4" />
-              Reset
+              <span className="hidden sm:inline">Reset</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container relative z-10 pt-8 pb-24">
-        <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
-          <div className="order-2 grid gap-6 lg:order-1">
+      <main className="container relative z-10 pt-6 pb-24 sm:pt-8">
+        <div className="grid gap-10 md:grid-cols-[0.82fr_1.18fr] md:items-start">
+          <div className="order-2 grid gap-6 md:order-1">
             <div className="grid gap-5">
               <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] uppercase tracking-[0.32em] text-muted-foreground">
                 <span className="inline-flex items-center gap-2">
@@ -912,16 +912,21 @@ export function IconLab() {
             </div>
           </div>
 
-          <div className="order-1 lg:order-2">
+          <div className="order-1 md:order-2">
             <Card className="overflow-hidden border-border/70 bg-card/70 p-0 shadow-[0_28px_120px_hsl(var(--foreground)/0.06)] backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
-              <div className="border-b border-border/70 bg-background/40 px-6 py-5">
+              <div className="border-b border-border/70 bg-background/40 px-4 py-3 sm:px-6 sm:py-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
                       Start here
                     </div>
                     <div className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Pick a target format, then drop an image.
+                      <span className="sm:hidden">
+                        Pick a format, then drop an image.
+                      </span>
+                      <span className="hidden sm:inline">
+                        Pick a target format, then drop an image.
+                      </span>
                     </div>
                   </div>
                   <Button
@@ -976,7 +981,7 @@ export function IconLab() {
                       );
                     })}
                   </div>
-                  <div className="mt-2 text-[12px] leading-5 text-muted-foreground">
+                  <div className="mt-2 hidden text-[12px] leading-5 text-muted-foreground sm:block">
                     Tip: click chips to add/remove. Use{" "}
                     <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
                       Browse packs
@@ -995,9 +1000,9 @@ export function IconLab() {
                 </div>
               </div>
 
-              <div className="px-6 py-6">
+              <div className="px-4 py-3 sm:px-6 sm:py-6">
                 <div className="grid gap-4">
-                  <div className="grid gap-2">
+                  <div className="order-2 grid gap-2 sm:order-1">
                     <Label
                       htmlFor={`${id}-url`}
                       className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground"
@@ -1027,7 +1032,7 @@ export function IconLab() {
                     </div>
                   </div>
 
-                  <div className="grid gap-3">
+                  <div className="order-1 grid gap-3 sm:order-2">
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -1041,7 +1046,7 @@ export function IconLab() {
 
                     <div
                       className={cn(
-                        "group relative grid min-h-[320px] place-items-center overflow-hidden rounded-2xl border border-dashed",
+                        "group relative grid min-h-[200px] place-items-center overflow-hidden rounded-2xl border border-dashed sm:min-h-[300px] lg:min-h-[320px]",
                         "border-border/70 bg-background/40 transition",
                         isDragging
                           ? "border-foreground/40 bg-muted/50 shadow-[0_0_0_6px_hsl(var(--foreground)/0.05)]"
@@ -1050,18 +1055,18 @@ export function IconLab() {
                       )}
                     >
                       {!source ? (
-                        <div className="mx-auto flex max-w-lg flex-col items-center px-8 text-center">
-                          <div className="mb-4 grid size-14 place-items-center rounded-2xl border border-border/70 bg-background/70 shadow-[0_22px_90px_hsl(var(--foreground)/0.06)] transition group-hover:scale-[1.02]">
+                        <div className="mx-auto flex max-w-lg flex-col items-center px-6 text-center sm:px-8">
+                          <div className="mb-3 grid size-12 place-items-center rounded-2xl border border-border/70 bg-background/70 shadow-[0_22px_90px_hsl(var(--foreground)/0.06)] transition group-hover:scale-[1.02] sm:mb-4 sm:size-14">
                             <Upload className="size-6" />
                           </div>
-                          <div className="font-[family-name:var(--font-display)] text-3xl tracking-tight italic">
+                          <div className="font-[family-name:var(--font-display)] text-2xl tracking-tight italic sm:text-3xl">
                             Drop an image.
                           </div>
-                          <div className="mt-3 text-sm leading-6 font-mono text-muted-foreground">
+                          <div className="mt-3 hidden text-sm leading-6 font-mono text-muted-foreground sm:block">
                             Or paste with ⌘/Ctrl+V, or load a URL. You’ll get a
                             zip that matches real platform constraints.
                           </div>
-                          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-5">
                             <Button
                               onClick={onPickFile}
                               disabled={isLoading}

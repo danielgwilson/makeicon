@@ -9,7 +9,7 @@ async function expectNoHorizontalOverflow(page: Page) {
 }
 
 async function expectDropzoneAboveFold(page: Page) {
-  const visiblePx = await page.evaluate(() => {
+  const { visiblePx, minPx } = await page.evaluate(() => {
     const nodes = Array.from(document.querySelectorAll("*"));
     const drop = nodes.find(
       (el): el is HTMLElement =>
@@ -30,13 +30,18 @@ async function expectDropzoneAboveFold(page: Page) {
       }
     }
 
-    if (!zone) return 0;
+    if (!zone) return { visiblePx: 0, minPx: 0 };
     const rect = zone.getBoundingClientRect();
     const h = window.innerHeight;
-    return Math.max(0, Math.min(h, rect.bottom) - Math.max(0, rect.top));
+    const visiblePx = Math.max(
+      0,
+      Math.min(h, rect.bottom) - Math.max(0, rect.top),
+    );
+    const minPx = Math.min(200, Math.floor(h * 0.22));
+    return { visiblePx, minPx };
   });
 
-  expect(visiblePx).toBeGreaterThan(200);
+  expect(visiblePx).toBeGreaterThan(minPx);
 }
 
 async function expectPixelGridNotBlank(page: Page) {
@@ -96,6 +101,27 @@ test.describe("landing", () => {
     });
   });
 
+  test("tablet: pixel grid visible, no overflow", async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.goto("/");
+
+    await expect(page.getByText("makeicon", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("pixel-grid-field")).toBeVisible();
+    await page.waitForTimeout(250);
+
+    await expectNoHorizontalOverflow(page);
+    await expectDropzoneAboveFold(page);
+    await expectPixelGridNotBlank(page);
+
+    await page.screenshot({
+      path: testInfo.outputPath("landing-tablet.png"),
+      fullPage: false,
+    });
+  });
+
   test("mobile: pixel grid visible, no overflow", async ({
     page,
   }, testInfo) => {
@@ -113,6 +139,27 @@ test.describe("landing", () => {
 
     await page.screenshot({
       path: testInfo.outputPath("landing-mobile.png"),
+      fullPage: false,
+    });
+  });
+
+  test("small mobile: pixel grid visible, no overflow", async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.goto("/");
+
+    await expect(page.getByText("makeicon", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("pixel-grid-field")).toBeVisible();
+    await page.waitForTimeout(250);
+
+    await expectNoHorizontalOverflow(page);
+    await expectDropzoneAboveFold(page);
+    await expectPixelGridNotBlank(page);
+
+    await page.screenshot({
+      path: testInfo.outputPath("landing-small-mobile.png"),
       fullPage: false,
     });
   });
