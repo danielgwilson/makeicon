@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 
 const MAX_BYTES = 15 * 1024 * 1024;
 const UPSTREAM_TIMEOUT_MS = 10_000;
+const MAX_REDIRECTS = 5;
 
 function isPrivateIp(ip: string) {
   if (ip === "127.0.0.1" || ip === "::1") return true;
@@ -42,6 +43,39 @@ async function assertSafeUrl(url: URL) {
   }
 }
 
+async function fetchImageWithSafeRedirects(
+  initial: URL,
+  signal: AbortSignal,
+): Promise<Response> {
+  const headers = {
+    "user-agent": "makeicon.dev (image-proxy)",
+    accept: "image/*,*/*;q=0.8",
+  };
+
+  let current = initial;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
+    const res = await fetch(current.toString(), {
+      redirect: "manual",
+      signal,
+      headers,
+    });
+
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      res.body?.cancel();
+      if (!location) throw new Error("Upstream redirect missing location.");
+      const next = new URL(location, current);
+      await assertSafeUrl(next);
+      current = next;
+      continue;
+    }
+
+    return res;
+  }
+
+  throw new Error("Too many redirects.");
+}
+
 export async function GET(request: NextRequest) {
   const urlParam = request.nextUrl.searchParams.get("url");
   if (!urlParam) {
@@ -69,14 +103,7 @@ export async function GET(request: NextRequest) {
 
   let upstream: Response;
   try {
-    upstream = await fetch(target.toString(), {
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "user-agent": "makeicon.dev (image-proxy)",
-        accept: "image/*,*/*;q=0.8",
-      },
-    });
+    upstream = await fetchImageWithSafeRedirects(target, controller.signal);
   } catch (err) {
     return NextResponse.json(
       {
@@ -89,17 +116,6 @@ export async function GET(request: NextRequest) {
     );
   } finally {
     clearTimeout(timeout);
-  }
-
-  if (upstream.redirected) {
-    try {
-      await assertSafeUrl(new URL(upstream.url));
-    } catch (err) {
-      return NextResponse.json(
-        { error: err instanceof Error ? err.message : "Blocked URL." },
-        { status: 400 },
-      );
-    }
   }
 
   if (!upstream.ok) {
