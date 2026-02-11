@@ -865,7 +865,7 @@ export function IconLab() {
       (k) => selected[k],
     );
 
-    const url = new URL(window.location.href);
+    const url = new URL("/", window.location.origin);
     url.hash = "main-content";
 
     if (selectedIds.length && !isDefaultSelection(selected)) {
@@ -879,7 +879,8 @@ export function IconLab() {
       await navigator.clipboard.writeText(url.toString());
       toast.success("Link copied.");
     } catch {
-      toast.message("Could not copy. Try selecting the URL bar.");
+      window.prompt("Copy link:", url.toString());
+      toast.message("Copy link from prompt.");
     }
   }, [selected]);
 
