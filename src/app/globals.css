@@ -49,6 +49,7 @@
 }
 
 :root {
+  color-scheme: light;
   --viewport-height: 100vh;
   --radius: 0.7rem;
 
@@ -84,6 +85,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: 24 10% 6%;
   --foreground: 40 18% 96%;
 
@@ -158,6 +160,13 @@
     @apply bg-background text-foreground antialiased;
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  [role="button"],
+  a {
+    touch-action: manipulation;
   }
 }
 

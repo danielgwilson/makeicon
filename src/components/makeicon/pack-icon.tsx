@@ -53,5 +53,5 @@ export function PackIcon({
   className?: string;
 }) {
   const Icon = PACK_ICON[packId] ?? IconApps;
-  return <Icon className={className} size={18} />;
+  return <Icon className={className} size={18} aria-hidden="true" />;
 }
