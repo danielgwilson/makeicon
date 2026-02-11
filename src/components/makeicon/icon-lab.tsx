@@ -14,6 +14,7 @@ import {
   Upload,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -164,6 +165,34 @@ function safeJsonParse<T>(value: string | null): T | null {
   } catch {
     return null;
   }
+}
+
+function packIdsFromSearch(search: string): MakeIconPackId[] {
+  const params = new URLSearchParams(search);
+  const raw = (params.get("packs") ?? params.get("pack") ?? "").trim();
+  if (!raw) return [];
+  const maybe = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const out: MakeIconPackId[] = [];
+  for (const id of maybe) {
+    if (id in PACKS) out.push(id as MakeIconPackId);
+  }
+  return out;
+}
+
+function emptySelection(): PackSelection {
+  const out = { ...DEFAULT_PACKS };
+  for (const id of Object.keys(out) as MakeIconPackId[]) out[id] = false;
+  return out;
+}
+
+function isDefaultSelection(selection: PackSelection): boolean {
+  for (const id of Object.keys(DEFAULT_PACKS) as MakeIconPackId[]) {
+    if (selection[id] !== DEFAULT_PACKS[id]) return false;
+  }
+  return true;
 }
 
 async function blobToBytes(blob: Blob) {
@@ -428,6 +457,7 @@ export function IconLab() {
   }));
 
   const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const shouldPersistSelectionRef = useRef(true);
 
   useEffect(() => {
     const updateViewport = () => {
@@ -533,6 +563,7 @@ export function IconLab() {
   }, [selected]);
 
   const togglePack = useCallback((packId: MakeIconPackId) => {
+    shouldPersistSelectionRef.current = true;
     setSelected((prev) => ({ ...prev, [packId]: !prev[packId] }));
     setRecentPacks((prev) => {
       const next = [packId, ...prev.filter((p) => p !== packId)].filter((p) =>
@@ -578,23 +609,35 @@ export function IconLab() {
 
   useEffect(() => {
     try {
-      const saved = safeJsonParse<Partial<PackSelection>>(
-        localStorage.getItem(STORAGE_SELECTION),
-      );
-      if (saved) {
-        const next: PackSelection = { ...DEFAULT_PACKS };
-        for (const id of Object.keys(DEFAULT_PACKS) as MakeIconPackId[]) {
-          const v = saved[id];
-          if (typeof v === "boolean") next[id] = v;
-        }
+      const fromUrl = packIdsFromSearch(window.location.search);
+      if (fromUrl.length) {
+        shouldPersistSelectionRef.current = false;
+        const next = emptySelection();
+        for (const id of fromUrl) next[id] = true;
         setSelected(next);
+      } else {
+        const saved = safeJsonParse<Partial<PackSelection>>(
+          localStorage.getItem(STORAGE_SELECTION),
+        );
+        if (saved) {
+          const next: PackSelection = { ...DEFAULT_PACKS };
+          for (const id of Object.keys(DEFAULT_PACKS) as MakeIconPackId[]) {
+            const v = saved[id];
+            if (typeof v === "boolean") next[id] = v;
+          }
+          setSelected(next);
+        }
       }
 
       const savedRecent =
         safeJsonParse<MakeIconPackId[]>(
           localStorage.getItem(STORAGE_RECENTS),
         ) ?? [];
-      setRecentPacks(savedRecent.filter((p) => Boolean(PACKS[p])));
+      const mergedRecent = [
+        ...fromUrl,
+        ...savedRecent.filter((p) => Boolean(PACKS[p])),
+      ];
+      setRecentPacks(Array.from(new Set(mergedRecent)).slice(0, MAX_RECENTS));
     } catch {
       // ignore
     }
@@ -604,6 +647,7 @@ export function IconLab() {
 
   useEffect(() => {
     if (!prefsLoaded) return;
+    if (!shouldPersistSelectionRef.current) return;
     try {
       localStorage.setItem(STORAGE_SELECTION, JSON.stringify(selected));
     } catch {
@@ -622,6 +666,7 @@ export function IconLab() {
   }, []);
 
   const reset = useCallback(() => {
+    shouldPersistSelectionRef.current = true;
     setUrlValue("");
     setFit("contain");
     setPaddingRatio(0.08);
@@ -815,6 +860,30 @@ export function IconLab() {
     }
   }, [onFiles]);
 
+  const copyShareLink = useCallback(async () => {
+    const selectedIds = (Object.keys(selected) as MakeIconPackId[]).filter(
+      (k) => selected[k],
+    );
+
+    const url = new URL("/", window.location.origin);
+    url.hash = "main-content";
+
+    if (selectedIds.length && !isDefaultSelection(selected)) {
+      url.searchParams.set("packs", selectedIds.join(","));
+    } else {
+      url.searchParams.delete("packs");
+      url.searchParams.delete("pack");
+    }
+
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      toast.success("Link copied.");
+    } catch {
+      window.prompt("Copy link:", url.toString());
+      toast.message("Copy link from prompt.");
+    }
+  }, [selected]);
+
   return (
     <section
       aria-label="MakeIcon"
@@ -960,13 +1029,23 @@ export function IconLab() {
                       </span>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
-                    onClick={() => setIsPackPickerOpen(true)}
-                  >
-                    Browse Packs
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant="outline"
+                      className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                      onClick={() => setIsPackPickerOpen(true)}
+                    >
+                      Browse Packs
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                      onClick={copyShareLink}
+                    >
+                      <Link2 className="mr-2 size-4" aria-hidden="true" />
+                      Copy link
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="mt-4">
@@ -1544,6 +1623,12 @@ export function IconLab() {
               </div>
             </div>
             <div className="flex items-center gap-5 font-mono text-[12px] uppercase tracking-[0.18em]">
+              <Link
+                className="underline decoration-border/60 underline-offset-4 hover:text-foreground"
+                href="/packs"
+              >
+                Packs
+              </Link>
               <a
                 className="underline decoration-border/60 underline-offset-4 hover:text-foreground"
                 href="https://github.com/danielgwilson/makeicon"
