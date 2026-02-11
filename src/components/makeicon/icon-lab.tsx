@@ -166,6 +166,21 @@ function safeJsonParse<T>(value: string | null): T | null {
   }
 }
 
+function packIdsFromSearch(search: string): MakeIconPackId[] {
+  const params = new URLSearchParams(search);
+  const raw = (params.get("packs") ?? params.get("pack") ?? "").trim();
+  if (!raw) return [];
+  const maybe = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const out: MakeIconPackId[] = [];
+  for (const id of maybe) {
+    if (id in PACKS) out.push(id as MakeIconPackId);
+  }
+  return out;
+}
+
 async function blobToBytes(blob: Blob) {
   return new Uint8Array(await blob.arrayBuffer());
 }
@@ -578,23 +593,34 @@ export function IconLab() {
 
   useEffect(() => {
     try {
-      const saved = safeJsonParse<Partial<PackSelection>>(
-        localStorage.getItem(STORAGE_SELECTION),
-      );
-      if (saved) {
+      const fromUrl = packIdsFromSearch(window.location.search);
+      if (fromUrl.length) {
         const next: PackSelection = { ...DEFAULT_PACKS };
-        for (const id of Object.keys(DEFAULT_PACKS) as MakeIconPackId[]) {
-          const v = saved[id];
-          if (typeof v === "boolean") next[id] = v;
-        }
+        for (const id of fromUrl) next[id] = true;
         setSelected(next);
+      } else {
+        const saved = safeJsonParse<Partial<PackSelection>>(
+          localStorage.getItem(STORAGE_SELECTION),
+        );
+        if (saved) {
+          const next: PackSelection = { ...DEFAULT_PACKS };
+          for (const id of Object.keys(DEFAULT_PACKS) as MakeIconPackId[]) {
+            const v = saved[id];
+            if (typeof v === "boolean") next[id] = v;
+          }
+          setSelected(next);
+        }
       }
 
       const savedRecent =
         safeJsonParse<MakeIconPackId[]>(
           localStorage.getItem(STORAGE_RECENTS),
         ) ?? [];
-      setRecentPacks(savedRecent.filter((p) => Boolean(PACKS[p])));
+      const mergedRecent = [
+        ...fromUrl,
+        ...savedRecent.filter((p) => Boolean(PACKS[p])),
+      ];
+      setRecentPacks(Array.from(new Set(mergedRecent)).slice(0, MAX_RECENTS));
     } catch {
       // ignore
     }
