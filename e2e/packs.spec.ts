@@ -12,7 +12,10 @@ test("packs: landing page links preselect packs in generator", async ({
     page.getByRole("heading", { name: /Next\.js App Router icons/i }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "Generate this pack" }).click();
+  await Promise.all([
+    page.waitForURL(/\/\?packs=nextjs_app_router/),
+    page.getByRole("link", { name: "Generate this pack" }).click(),
+  ]);
 
   await expect(page).toHaveURL(/\/\?packs=nextjs_app_router/);
   await expect(page.getByText("1 selected")).toBeVisible();
