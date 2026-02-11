@@ -5,6 +5,7 @@ import { Buffer } from "buffer";
 import { zipSync } from "fflate";
 import {
   ArrowRight,
+  Check,
   Download,
   Link2,
   Loader2,
@@ -386,7 +387,10 @@ function packTitle(pack: MakeIconPackSpec) {
           {pack.summary}
         </div>
       </div>
-      <ArrowRight className="mt-1 size-4 text-muted-foreground/80 transition group-hover:translate-x-0.5 group-hover:text-foreground/80" />
+      <ArrowRight
+        className="mt-1 size-4 text-muted-foreground/80 transition group-hover:translate-x-0.5 group-hover:text-foreground/80"
+        aria-hidden="true"
+      />
     </div>
   );
 }
@@ -812,10 +816,8 @@ export function IconLab() {
   }, [onFiles]);
 
   return (
-    <div
-      role="application"
+    <section
       aria-label="MakeIcon"
-      tabIndex={-1}
       className="min-h-[var(--viewport-height)] overflow-x-hidden bg-background text-foreground"
       onDragOver={(e) => e.preventDefault()}
       onDragEnter={onDragEnterRoot}
@@ -846,7 +848,7 @@ export function IconLab() {
         <div className="container flex items-center justify-between gap-3 py-3 sm:py-4">
           <div className="flex min-w-0 items-center gap-3">
             <div className="grid size-10 place-items-center rounded-2xl border border-border/70 bg-background shadow-[0_18px_90px_hsl(var(--foreground)/0.06)]">
-              <Sparkles className="size-5" />
+              <Sparkles className="size-5" aria-hidden="true" />
             </div>
             <div className="min-w-0 leading-none">
               <div className="font-[family-name:var(--font-display)] text-[22px] leading-none tracking-tight italic">
@@ -864,8 +866,8 @@ export function IconLab() {
               onClick={onPickFile}
               disabled={isLoading}
             >
-              <Upload className="mr-2 size-4" />
-              <span className="hidden sm:inline">Pick file</span>
+              <Upload className="mr-2 size-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Pick File</span>
             </Button>
             <Button
               variant="ghost"
@@ -873,21 +875,25 @@ export function IconLab() {
               onClick={reset}
               disabled={!hasSource}
             >
-              <RotateCcw className="mr-2 size-4" />
+              <RotateCcw className="mr-2 size-4" aria-hidden="true" />
               <span className="hidden sm:inline">Reset</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container relative z-10 pt-6 pb-24 sm:pt-8">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="container relative z-10 pt-6 pb-24 sm:pt-8"
+      >
         <div className="grid gap-10 md:grid-cols-[0.82fr_1.18fr] md:items-start">
           <div className="order-2 grid gap-6 md:order-1">
             <div className="grid gap-5">
               <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] uppercase tracking-[0.32em] text-muted-foreground">
                 <span className="inline-flex items-center gap-2">
                   <span className="size-1.5 rounded-full bg-accent" />
-                  icon pack generator
+                  Icon Pack Generator
                 </span>
                 <span className="hidden sm:inline">·</span>
                 <span>drop · paste · url</span>
@@ -904,7 +910,7 @@ export function IconLab() {
                     "dark:[-webkit-text-stroke:1px_hsl(var(--foreground)/0.85)]",
                   )}
                 >
-                  real deployments
+                  Real Deployments
                 </span>
               </h1>
               <p className="max-w-[62ch] text-sm leading-6 text-muted-foreground sm:text-base">
@@ -913,7 +919,7 @@ export function IconLab() {
               </p>
               <div className="rounded-3xl border border-border/70 bg-background/45 p-5">
                 <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
-                  What are you making?
+                  What Are You Making?
                 </div>
                 <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
@@ -942,9 +948,9 @@ export function IconLab() {
               <div className="border-b border-border/70 bg-background/40 px-4 py-3 sm:px-6 sm:py-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
-                      Start here
-                    </div>
+                    <h2 className="text-balance font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+                      Start Here
+                    </h2>
                     <div className="mt-2 text-sm leading-6 text-muted-foreground">
                       <span className="sm:hidden">
                         Pick a format, then drop an image.
@@ -959,14 +965,14 @@ export function IconLab() {
                     className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
                     onClick={() => setIsPackPickerOpen(true)}
                   >
-                    Browse packs
+                    Browse Packs
                   </Button>
                 </div>
 
                 <div className="mt-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
-                      Make icons for
+                      Make Icons For
                     </div>
                     <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
                       {selectedPacks.length} selected
@@ -983,16 +989,20 @@ export function IconLab() {
                             type="button"
                             aria-pressed={isOn}
                             className={cn(
-                              "group inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-left transition",
-                              "border-border/70 bg-background/55 hover:bg-background/80",
-                              isOn ? "border-foreground/18" : null,
+                              "group relative inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                              isOn
+                                ? "border-accent/50 bg-accent/10 text-foreground shadow-[0_10px_30px_hsl(var(--accent)/0.18)]"
+                                : "border-border/70 bg-background/55 hover:border-foreground/20 hover:bg-background/80",
                             )}
                             onClick={() => togglePack(packId)}
                           >
                             <span
                               className={cn(
-                                "grid size-7 place-items-center rounded-full shadow-sm",
+                                "grid size-7 place-items-center rounded-full shadow-sm transition",
                                 brand.bg,
+                                isOn
+                                  ? "ring-2 ring-accent/50 ring-offset-2 ring-offset-background"
+                                  : "group-hover:ring-1 group-hover:ring-foreground/10",
                               )}
                             >
                               <PackMark
@@ -1003,6 +1013,20 @@ export function IconLab() {
                             <span className="max-w-[150px] truncate text-[13px] font-medium">
                               {packChipLabel(packId)}
                             </span>
+                            <span
+                              className={cn(
+                                "absolute -right-1 -top-1 grid size-5 place-items-center rounded-full border border-border/70 bg-background text-accent shadow-sm transition",
+                                isOn
+                                  ? "scale-100 opacity-100"
+                                  : "scale-90 opacity-0",
+                              )}
+                              aria-hidden="true"
+                            >
+                              <Check className="size-3" />
+                            </span>
+                            <span className="sr-only">
+                              {isOn ? "Selected" : "Not selected"}
+                            </span>
                           </button>
                         );
                       })}
@@ -1012,7 +1036,7 @@ export function IconLab() {
                   <div className="mt-2 hidden text-[12px] leading-5 text-muted-foreground sm:block">
                     Tip: click chips to add/remove. Use{" "}
                     <span className="font-mono text-[11px] uppercase tracking-[0.22em]">
-                      Browse packs
+                      Browse Packs
                     </span>{" "}
                     for everything else.
                   </div>
@@ -1035,12 +1059,16 @@ export function IconLab() {
                       htmlFor={`${id}-url`}
                       className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground"
                     >
-                      <Link2 className="size-4" />
+                      <Link2 className="size-4" aria-hidden="true" />
                       Image URL
                     </Label>
                     <div className="flex gap-2">
                       <Input
                         id={`${id}-url`}
+                        name="imageUrl"
+                        type="url"
+                        inputMode="url"
+                        autoComplete="off"
                         placeholder="https://…"
                         value={urlValue}
                         onChange={(e) => setUrlValue(e.target.value)}
@@ -1063,9 +1091,12 @@ export function IconLab() {
                   <div className="order-1 grid gap-3 sm:order-2">
                     <input
                       ref={fileInputRef}
+                      id={`${id}-file`}
                       type="file"
+                      name="imageFile"
                       accept="image/*"
                       className="hidden"
+                      aria-label="Upload image file"
                       onChange={(e) => {
                         if (e.target.files?.length) onFiles(e.target.files);
                         e.currentTarget.value = "";
@@ -1085,7 +1116,7 @@ export function IconLab() {
                       {!source ? (
                         <div className="mx-auto flex max-w-lg flex-col items-center px-6 text-center sm:px-8">
                           <div className="mb-3 grid size-12 place-items-center rounded-2xl border border-border/70 bg-background/70 shadow-[0_22px_90px_hsl(var(--foreground)/0.06)] transition group-hover:scale-[1.02] sm:mb-4 sm:size-14">
-                            <Upload className="size-6" />
+                            <Upload className="size-6" aria-hidden="true" />
                           </div>
                           <div className="font-[family-name:var(--font-display)] text-2xl tracking-tight italic sm:text-3xl">
                             Drop an image.
@@ -1102,10 +1133,16 @@ export function IconLab() {
                               className="w-full rounded-full font-mono text-[12px] uppercase tracking-[0.18em] sm:w-auto"
                             >
                               {isLoading ? (
-                                <Loader2 className="mr-2 size-4 animate-spin" />
+                                <Loader2
+                                  className="mr-2 size-4 animate-spin motion-reduce:animate-none"
+                                  aria-hidden="true"
+                                />
                               ) : null}
-                              Choose file
-                              <ArrowRight className="ml-2 size-4" />
+                              Choose File
+                              <ArrowRight
+                                className="ml-2 size-4"
+                                aria-hidden="true"
+                              />
                             </Button>
                             <Button
                               variant="outline"
@@ -1113,7 +1150,7 @@ export function IconLab() {
                               disabled={isLoading}
                               className="w-full rounded-full font-mono text-[12px] uppercase tracking-[0.18em] sm:w-auto"
                             >
-                              Paste image
+                              Paste Image
                             </Button>
                           </div>
                         </div>
@@ -1148,6 +1185,7 @@ export function IconLab() {
                                         : "secondary"
                                     }
                                     className="h-9 flex-1 rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                                    aria-pressed={fit === "contain"}
                                     onClick={() => setFit("contain")}
                                   >
                                     Contain
@@ -1158,6 +1196,7 @@ export function IconLab() {
                                       fit === "cover" ? "default" : "secondary"
                                     }
                                     className="h-9 flex-1 rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                                    aria-pressed={fit === "cover"}
                                     onClick={() => setFit("cover")}
                                   >
                                     Cover
@@ -1192,7 +1231,9 @@ export function IconLab() {
                                   </Label>
                                   <Input
                                     id={`${id}-bg`}
-                                    placeholder="transparent"
+                                    name="background"
+                                    autoComplete="off"
+                                    placeholder="transparent…"
                                     value={background ?? ""}
                                     onChange={(e) => {
                                       const v = e.target.value.trim();
@@ -1217,9 +1258,9 @@ export function IconLab() {
           <div className="border-b border-border/70 bg-background/40 px-6 py-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
-                <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+                <h2 className="text-balance font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
                   Export
-                </div>
+                </h2>
                 <div className="mt-2 text-sm leading-6 text-muted-foreground">
                   Select packs, then download a zip.
                 </div>
@@ -1230,7 +1271,7 @@ export function IconLab() {
                   className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
                   onClick={() => setIsPackPickerOpen(true)}
                 >
-                  Add formats
+                  Add Formats
                 </Button>
                 <Button
                   variant="brand"
@@ -1238,8 +1279,8 @@ export function IconLab() {
                   disabled={!source || isLoading}
                   className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
                 >
-                  <Download className="mr-2 size-4" />
-                  Download zip
+                  <Download className="mr-2 size-4" aria-hidden="true" />
+                  Download Zip
                   {selectedPacks.length ? (
                     <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-[11px]">
                       {selectedPacks.length} pack
@@ -1260,7 +1301,8 @@ export function IconLab() {
                     <button
                       key={pack.id}
                       type="button"
-                      className="group inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/40 px-3 py-2 text-left transition hover:bg-background/70"
+                      className="group relative inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/40 px-3 py-2 text-left transition hover:border-foreground/20 hover:bg-background/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      aria-pressed={true}
                       onClick={() => togglePack(pack.id)}
                       title="Click to remove"
                     >
@@ -1277,6 +1319,12 @@ export function IconLab() {
                       </span>
                       <span className="text-[13px] font-medium">
                         {pack.name}
+                      </span>
+                      <span
+                        className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full border border-border/70 bg-background text-accent shadow-sm"
+                        aria-hidden="true"
+                      >
+                        <Check className="size-3" />
                       </span>
                     </button>
                   );
@@ -1325,8 +1373,8 @@ export function IconLab() {
           <DialogContent className="max-w-3xl overflow-hidden p-0">
             <div className="border-b border-border/70 bg-background/60 p-6">
               <DialogHeader className="text-left">
-                <DialogTitle className="font-[family-name:var(--font-display)] text-2xl italic">
-                  All packs
+                <DialogTitle className="text-balance font-[family-name:var(--font-display)] text-2xl italic">
+                  All Packs
                 </DialogTitle>
               </DialogHeader>
               <div className="mt-4 grid gap-2">
@@ -1338,6 +1386,8 @@ export function IconLab() {
                 </Label>
                 <Input
                   id={`${id}-pack-search`}
+                  name="packSearch"
+                  autoComplete="off"
                   placeholder="Try: next, slack, vercel, ios…"
                   value={packQuery}
                   onChange={(e) => setPackQuery(e.target.value)}
@@ -1351,58 +1401,58 @@ export function IconLab() {
                 className="mt-4"
               >
                 <div className="relative overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
-                  <TabsList className="h-10 w-max rounded-full bg-background/40 p-1">
+                  <TabsList className="h-11 w-max rounded-full border border-border/70 bg-background/45 p-1 shadow-inner">
                     <TabsTrigger
                       value="all"
-                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                      className="rounded-full border border-transparent px-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground data-[state=active]:border-accent/40 data-[state=active]:bg-accent/15 data-[state=active]:text-foreground data-[state=active]:shadow-[0_10px_30px_hsl(var(--accent)/0.18)]"
                     >
                       All
                     </TabsTrigger>
                     <TabsTrigger
                       value="web"
-                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                      className="rounded-full border border-transparent px-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground data-[state=active]:border-accent/40 data-[state=active]:bg-accent/15 data-[state=active]:text-foreground data-[state=active]:shadow-[0_10px_30px_hsl(var(--accent)/0.18)]"
                     >
                       Web
                     </TabsTrigger>
                     <TabsTrigger
                       value="frameworks"
-                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                      className="rounded-full border border-transparent px-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground data-[state=active]:border-accent/40 data-[state=active]:bg-accent/15 data-[state=active]:text-foreground data-[state=active]:shadow-[0_10px_30px_hsl(var(--accent)/0.18)]"
                     >
                       Frameworks
                     </TabsTrigger>
                     <TabsTrigger
                       value="extensions"
-                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                      className="rounded-full border border-transparent px-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground data-[state=active]:border-accent/40 data-[state=active]:bg-accent/15 data-[state=active]:text-foreground data-[state=active]:shadow-[0_10px_30px_hsl(var(--accent)/0.18)]"
                     >
                       Extensions
                     </TabsTrigger>
                     <TabsTrigger
                       value="chat"
-                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                      className="rounded-full border border-transparent px-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground data-[state=active]:border-accent/40 data-[state=active]:bg-accent/15 data-[state=active]:text-foreground data-[state=active]:shadow-[0_10px_30px_hsl(var(--accent)/0.18)]"
                     >
                       Chat
                     </TabsTrigger>
                     <TabsTrigger
                       value="native"
-                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                      className="rounded-full border border-transparent px-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground data-[state=active]:border-accent/40 data-[state=active]:bg-accent/15 data-[state=active]:text-foreground data-[state=active]:shadow-[0_10px_30px_hsl(var(--accent)/0.18)]"
                     >
                       Native
                     </TabsTrigger>
                     <TabsTrigger
                       value="dev"
-                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                      className="rounded-full border border-transparent px-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground data-[state=active]:border-accent/40 data-[state=active]:bg-accent/15 data-[state=active]:text-foreground data-[state=active]:shadow-[0_10px_30px_hsl(var(--accent)/0.18)]"
                     >
                       Dev
                     </TabsTrigger>
                     <TabsTrigger
                       value="docs"
-                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                      className="rounded-full border border-transparent px-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground data-[state=active]:border-accent/40 data-[state=active]:bg-accent/15 data-[state=active]:text-foreground data-[state=active]:shadow-[0_10px_30px_hsl(var(--accent)/0.18)]"
                     >
                       Docs
                     </TabsTrigger>
                     <TabsTrigger
                       value="design"
-                      className="rounded-full px-3 font-mono text-[11px] uppercase tracking-[0.2em]"
+                      className="rounded-full border border-transparent px-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground data-[state=active]:border-accent/40 data-[state=active]:bg-accent/15 data-[state=active]:text-foreground data-[state=active]:shadow-[0_10px_30px_hsl(var(--accent)/0.18)]"
                     >
                       Design
                     </TabsTrigger>
@@ -1412,7 +1462,7 @@ export function IconLab() {
               </Tabs>
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto p-6">
+            <div className="max-h-[60vh] overflow-y-auto overscroll-contain p-6">
               <div className="grid gap-6">
                 {packTabCategories.map((category) => {
                   const packs = packsByCategory.get(category) ?? [];
@@ -1430,21 +1480,35 @@ export function IconLab() {
                               key={pack.id}
                               type="button"
                               className={cn(
-                                "group relative w-full min-w-0 rounded-3xl border p-5 text-left transition",
+                                "group relative w-full min-w-0 rounded-3xl border p-5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                                 "border-border/70 bg-background/30",
                                 "hover:border-foreground/18 hover:bg-background/50 hover:shadow-[0_20px_90px_hsl(var(--foreground)/0.08)]",
                                 isOn
-                                  ? "border-foreground/22 bg-background/65 shadow-[0_22px_90px_hsl(var(--foreground)/0.06)]"
+                                  ? "border-accent/45 bg-accent/10 shadow-[0_22px_90px_hsl(var(--accent)/0.12)]"
                                   : null,
                               )}
+                              aria-pressed={isOn}
                               onClick={() => togglePack(pack.id)}
                             >
+                              <span
+                                className={cn(
+                                  "pointer-events-none absolute left-0 top-6 h-10 w-1 rounded-full transition",
+                                  isOn ? "bg-accent" : "bg-transparent",
+                                )}
+                                aria-hidden="true"
+                              />
                               {packTitle(pack)}
                               <div className="mt-3 flex flex-wrap gap-2">
                                 <Badge
                                   variant={isOn ? "default" : "secondary"}
                                   className="rounded-full font-mono text-[11px] uppercase tracking-[0.14em]"
                                 >
+                                  {isOn ? (
+                                    <Check
+                                      className="size-3"
+                                      aria-hidden="true"
+                                    />
+                                  ) : null}
                                   {isOn ? "Included" : "Not included"}
                                 </Badge>
                                 <Badge
@@ -1484,7 +1548,7 @@ export function IconLab() {
                 className="underline decoration-border/60 underline-offset-4 hover:text-foreground"
                 href="https://github.com/danielgwilson/makeicon"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 GitHub
               </a>
@@ -1492,7 +1556,7 @@ export function IconLab() {
                 className="underline decoration-border/60 underline-offset-4 hover:text-foreground"
                 href="https://vercel.com/dgwto/makeicon"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 Vercel
               </a>
@@ -1500,7 +1564,7 @@ export function IconLab() {
           </div>
         </footer>
       </main>
-    </div>
+    </section>
   );
 }
 

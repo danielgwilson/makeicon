@@ -2,7 +2,10 @@ import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { type NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 const MAX_BYTES = 15 * 1024 * 1024;
+const UPSTREAM_TIMEOUT_MS = 10_000;
 
 function isPrivateIp(ip: string) {
   if (ip === "127.0.0.1" || ip === "::1") return true;
@@ -61,18 +64,57 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const upstream = await fetch(target.toString(), {
-    redirect: "follow",
-    headers: {
-      "user-agent": "makeicon.dev (image-proxy)",
-      accept: "image/*,*/*;q=0.8",
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(target.toString(), {
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "user-agent": "makeicon.dev (image-proxy)",
+        accept: "image/*,*/*;q=0.8",
+      },
+    });
+  } catch (err) {
+    return NextResponse.json(
+      {
+        error:
+          err instanceof Error && err.name === "AbortError"
+            ? "Upstream timed out."
+            : "Failed to fetch upstream.",
+      },
+      { status: 504 },
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (upstream.redirected) {
+    try {
+      await assertSafeUrl(new URL(upstream.url));
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "Blocked URL." },
+        { status: 400 },
+      );
+    }
+  }
 
   if (!upstream.ok) {
     return NextResponse.json(
       { error: `Upstream error (${upstream.status}).` },
       { status: 502 },
+    );
+  }
+
+  const contentLengthHeader = upstream.headers.get("content-length");
+  const contentLength = contentLengthHeader ? Number(contentLengthHeader) : NaN;
+  if (Number.isFinite(contentLength) && contentLength > MAX_BYTES) {
+    return NextResponse.json(
+      { error: `Image too large (>${Math.round(MAX_BYTES / 1024 / 1024)}MB).` },
+      { status: 413 },
     );
   }
 
