@@ -152,6 +152,7 @@ export async function GET(request: NextRequest) {
   try {
     upstream = await fetchImageWithSafeRedirects(target, controller.signal);
   } catch (err) {
+    clearTimeout(timeout);
     return NextResponse.json(
       {
         error:
