@@ -181,6 +181,12 @@ function packIdsFromSearch(search: string): MakeIconPackId[] {
   return out;
 }
 
+function emptySelection(): PackSelection {
+  const out = { ...DEFAULT_PACKS };
+  for (const id of Object.keys(out) as MakeIconPackId[]) out[id] = false;
+  return out;
+}
+
 async function blobToBytes(blob: Blob) {
   return new Uint8Array(await blob.arrayBuffer());
 }
@@ -443,6 +449,7 @@ export function IconLab() {
   }));
 
   const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const shouldPersistSelectionRef = useRef(true);
 
   useEffect(() => {
     const updateViewport = () => {
@@ -548,6 +555,7 @@ export function IconLab() {
   }, [selected]);
 
   const togglePack = useCallback((packId: MakeIconPackId) => {
+    shouldPersistSelectionRef.current = true;
     setSelected((prev) => ({ ...prev, [packId]: !prev[packId] }));
     setRecentPacks((prev) => {
       const next = [packId, ...prev.filter((p) => p !== packId)].filter((p) =>
@@ -595,7 +603,8 @@ export function IconLab() {
     try {
       const fromUrl = packIdsFromSearch(window.location.search);
       if (fromUrl.length) {
-        const next: PackSelection = { ...DEFAULT_PACKS };
+        shouldPersistSelectionRef.current = false;
+        const next = emptySelection();
         for (const id of fromUrl) next[id] = true;
         setSelected(next);
       } else {
@@ -630,6 +639,7 @@ export function IconLab() {
 
   useEffect(() => {
     if (!prefsLoaded) return;
+    if (!shouldPersistSelectionRef.current) return;
     try {
       localStorage.setItem(STORAGE_SELECTION, JSON.stringify(selected));
     } catch {
@@ -648,6 +658,7 @@ export function IconLab() {
   }, []);
 
   const reset = useCallback(() => {
+    shouldPersistSelectionRef.current = true;
     setUrlValue("");
     setFit("contain");
     setPaddingRatio(0.08);

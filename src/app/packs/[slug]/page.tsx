@@ -2,19 +2,30 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { getPackPage } from "@/lib/makeicon/pack-pages";
+import { getPackPage, PACK_PAGES } from "@/lib/makeicon/pack-pages";
 import { PACKS } from "@/lib/makeicon/packs";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return PACK_PAGES.map((p) => ({ slug: p.slug }));
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const page = getPackPage(slug);
-  if (!page) return { title: "Pack not found" };
+  if (!page) {
+    return {
+      title: "Pack not found",
+      robots: { index: false, follow: false },
+    };
+  }
   return {
     title: `${page.title} — makeicon.dev`,
     description: page.description,

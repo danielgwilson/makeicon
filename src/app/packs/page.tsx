@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PACK_PAGES } from "@/lib/makeicon/pack-pages";
+import { PACKS } from "@/lib/makeicon/packs";
 
 export const metadata = {
   title: "Icon packs",
@@ -46,7 +47,7 @@ export default function PacksIndexPage() {
                   {p.description}
                 </div>
                 <div className="pt-1 font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground/80">
-                  {p.packIds.join(" · ").replaceAll("_", " ")}
+                  {p.packIds.map((id) => PACKS[id].name).join(" · ")}
                 </div>
               </div>
             </Link>
