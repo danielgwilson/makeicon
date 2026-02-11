@@ -14,6 +14,7 @@ import {
   Upload,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -179,6 +180,13 @@ function packIdsFromSearch(search: string): MakeIconPackId[] {
     if (id in PACKS) out.push(id as MakeIconPackId);
   }
   return out;
+}
+
+function isDefaultSelection(selection: PackSelection): boolean {
+  for (const id of Object.keys(DEFAULT_PACKS) as MakeIconPackId[]) {
+    if (selection[id] !== DEFAULT_PACKS[id]) return false;
+  }
+  return true;
 }
 
 async function blobToBytes(blob: Blob) {
@@ -841,6 +849,29 @@ export function IconLab() {
     }
   }, [onFiles]);
 
+  const copyShareLink = useCallback(async () => {
+    const selectedIds = (Object.keys(selected) as MakeIconPackId[]).filter(
+      (k) => selected[k],
+    );
+
+    const url = new URL(window.location.href);
+    url.hash = "main-content";
+
+    if (selectedIds.length && !isDefaultSelection(selected)) {
+      url.searchParams.set("packs", selectedIds.join(","));
+    } else {
+      url.searchParams.delete("packs");
+      url.searchParams.delete("pack");
+    }
+
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      toast.success("Link copied.");
+    } catch {
+      toast.message("Could not copy. Try selecting the URL bar.");
+    }
+  }, [selected]);
+
   return (
     <section
       aria-label="MakeIcon"
@@ -986,13 +1017,23 @@ export function IconLab() {
                       </span>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
-                    onClick={() => setIsPackPickerOpen(true)}
-                  >
-                    Browse Packs
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant="outline"
+                      className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                      onClick={() => setIsPackPickerOpen(true)}
+                    >
+                      Browse Packs
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="rounded-full font-mono text-[12px] uppercase tracking-[0.18em]"
+                      onClick={copyShareLink}
+                    >
+                      <Link2 className="mr-2 size-4" aria-hidden="true" />
+                      Copy link
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="mt-4">
@@ -1570,6 +1611,12 @@ export function IconLab() {
               </div>
             </div>
             <div className="flex items-center gap-5 font-mono text-[12px] uppercase tracking-[0.18em]">
+              <Link
+                className="underline decoration-border/60 underline-offset-4 hover:text-foreground"
+                href="/packs"
+              >
+                Packs
+              </Link>
               <a
                 className="underline decoration-border/60 underline-offset-4 hover:text-foreground"
                 href="https://github.com/danielgwilson/makeicon"
