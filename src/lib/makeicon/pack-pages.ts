@@ -21,8 +21,14 @@ export const PACK_PAGES: PackPage[] = [
       "Generate a deploy-ready favicon + PWA icon set: ICO, PNGs, maskable variants, and a web manifest starter.",
     packIds: ["web_favicon_pwa"],
     sources: [
-      { label: "web.dev — Maskable icons", href: "https://web.dev/maskable-icon/" },
-      { label: "W3C — Web App Manifest", href: "https://www.w3.org/TR/appmanifest/" },
+      {
+        label: "web.dev — Maskable icons",
+        href: "https://web.dev/maskable-icon/",
+      },
+      {
+        label: "W3C — Web App Manifest",
+        href: "https://www.w3.org/TR/appmanifest/",
+      },
       {
         label: "MDN — Manifest icons",
         href: "https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/icons",
@@ -116,4 +122,3 @@ export const PACK_PAGES: PackPage[] = [
 export function getPackPage(slug: string): PackPage | null {
   return PACK_PAGES.find((p) => p.slug === slug) ?? null;
 }
-

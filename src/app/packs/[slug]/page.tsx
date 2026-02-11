@@ -1,9 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
-import { PACKS } from "@/lib/makeicon/packs";
 import { getPackPage } from "@/lib/makeicon/pack-pages";
+import { PACKS } from "@/lib/makeicon/packs";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -126,4 +126,3 @@ export default async function PackPage({ params }: PageProps) {
     </main>
   );
 }
-
