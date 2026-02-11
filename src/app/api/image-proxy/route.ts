@@ -7,15 +7,46 @@ export const runtime = "nodejs";
 const MAX_BYTES = 15 * 1024 * 1024;
 const UPSTREAM_TIMEOUT_MS = 10_000;
 const MAX_REDIRECTS = 5;
+const DNS_TIMEOUT_MS = 2_500;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      const id = setTimeout(() => reject(new Error(message)), ms);
+      (promise as Promise<T>).finally(() => clearTimeout(id));
+    }),
+  ]);
+}
 
 function isPrivateIp(ip: string) {
-  if (ip === "127.0.0.1" || ip === "::1") return true;
-  if (ip.startsWith("10.")) return true;
-  if (ip.startsWith("192.168.")) return true;
-  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(ip)) return true;
-  if (ip.startsWith("169.254.")) return true;
-  if (ip.startsWith("fc") || ip.startsWith("fd")) return true; // fc00::/7
-  if (ip.startsWith("fe80:")) return true;
+  if (ip.includes(":")) {
+    const normalized = ip.toLowerCase();
+    if (normalized === "::1" || normalized === "::") return true;
+    if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true; // fc00::/7
+    if (normalized.startsWith("fe80:")) return true;
+    if (normalized.startsWith("::ffff:")) {
+      const v4 = normalized.slice("::ffff:".length);
+      if (isIP(v4) === 4) return isPrivateIp(v4);
+    }
+    return false;
+  }
+
+  const parts = ip.split(".");
+  if (parts.length !== 4) return false;
+  const nums = parts.map((p) => Number(p));
+  if (nums.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return false;
+  const [a, b] = nums;
+
+  if (a === 127) return true; // 127.0.0.0/8
+  if (a === 10) return true; // 10.0.0.0/8
+  if (a === 0) return true; // 0.0.0.0/8
+  if (a === 169 && b === 254) return true; // 169.254.0.0/16
+  if (a === 192 && b === 168) return true; // 192.168.0.0/16
+  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+  if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10
+  if (a === 198 && (b === 18 || b === 19)) return true; // 198.18.0.0/15
+
   return false;
 }
 
@@ -25,7 +56,11 @@ async function assertSafeUrl(url: URL) {
   }
 
   const host = url.hostname.toLowerCase();
-  if (host === "localhost" || host.endsWith(".local")) {
+  if (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".local")
+  ) {
     throw new Error("Localhost URLs are not allowed.");
   }
 
@@ -35,7 +70,11 @@ async function assertSafeUrl(url: URL) {
     return;
   }
 
-  const records = await lookup(host, { all: true, verbatim: true });
+  const records = await withTimeout(
+    lookup(host, { all: true, verbatim: true }),
+    DNS_TIMEOUT_MS,
+    "DNS lookup timed out.",
+  );
   for (const r of records) {
     if (isPrivateIp(r.address)) {
       throw new Error("That URL resolves to a private IP.");
@@ -53,17 +92,27 @@ async function fetchImageWithSafeRedirects(
   };
 
   let current = initial;
-  for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
+  let redirects = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
     const res = await fetch(current.toString(), {
       redirect: "manual",
       signal,
       headers,
     });
 
-    if (res.status >= 300 && res.status < 400) {
+    if (
+      res.status === 301 ||
+      res.status === 302 ||
+      res.status === 303 ||
+      res.status === 307 ||
+      res.status === 308
+    ) {
       const location = res.headers.get("location");
       res.body?.cancel();
       if (!location) throw new Error("Upstream redirect missing location.");
+      redirects += 1;
+      if (redirects > MAX_REDIRECTS) throw new Error("Too many redirects.");
       const next = new URL(location, current);
       await assertSafeUrl(next);
       current = next;
@@ -72,8 +121,6 @@ async function fetchImageWithSafeRedirects(
 
     return res;
   }
-
-  throw new Error("Too many redirects.");
 }
 
 export async function GET(request: NextRequest) {
@@ -112,13 +159,14 @@ export async function GET(request: NextRequest) {
             ? "Upstream timed out."
             : "Failed to fetch upstream.",
       },
-      { status: 504 },
+      {
+        status: err instanceof Error && err.name === "AbortError" ? 504 : 502,
+      },
     );
-  } finally {
-    clearTimeout(timeout);
   }
 
   if (!upstream.ok) {
+    clearTimeout(timeout);
     return NextResponse.json(
       { error: `Upstream error (${upstream.status}).` },
       { status: 502 },
@@ -128,6 +176,7 @@ export async function GET(request: NextRequest) {
   const contentLengthHeader = upstream.headers.get("content-length");
   const contentLength = contentLengthHeader ? Number(contentLengthHeader) : NaN;
   if (Number.isFinite(contentLength) && contentLength > MAX_BYTES) {
+    clearTimeout(timeout);
     return NextResponse.json(
       { error: `Image too large (>${Math.round(MAX_BYTES / 1024 / 1024)}MB).` },
       { status: 413 },
@@ -137,25 +186,57 @@ export async function GET(request: NextRequest) {
   const contentType =
     upstream.headers.get("content-type") || "application/octet-stream";
   if (!contentType.startsWith("image/")) {
+    clearTimeout(timeout);
     return NextResponse.json(
       { error: "Upstream did not return an image." },
       { status: 415 },
     );
   }
 
-  const arrayBuffer = await upstream.arrayBuffer();
-  if (arrayBuffer.byteLength > MAX_BYTES) {
+  try {
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    const reader = upstream.body?.getReader();
+    if (!reader) throw new Error("Missing response body.");
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_BYTES) {
+        controller.abort();
+        throw new Error(
+          `Image too large (>${Math.round(MAX_BYTES / 1024 / 1024)}MB).`,
+        );
+      }
+      chunks.push(value);
+    }
+
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const c of chunks) {
+      bytes.set(c, offset);
+      offset += c.byteLength;
+    }
+
+    return new NextResponse(bytes, {
+      status: 200,
+      headers: {
+        "content-type": contentType,
+        "cache-control": "public, max-age=3600, s-maxage=3600",
+        "x-content-type-options": "nosniff",
+        "content-security-policy": "default-src 'none'; sandbox;",
+        "content-disposition": 'attachment; filename="image"',
+      },
+    });
+  } catch (err) {
     return NextResponse.json(
-      { error: `Image too large (>${Math.round(MAX_BYTES / 1024 / 1024)}MB).` },
+      {
+        error: err instanceof Error ? err.message : "Failed to read upstream.",
+      },
       { status: 413 },
     );
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return new NextResponse(arrayBuffer, {
-    status: 200,
-    headers: {
-      "content-type": contentType,
-      "cache-control": "public, max-age=3600, s-maxage=3600",
-    },
-  });
 }
