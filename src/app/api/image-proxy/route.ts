@@ -230,11 +230,13 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Failed to read upstream.";
     return NextResponse.json(
       {
-        error: err instanceof Error ? err.message : "Failed to read upstream.",
+        error: message,
       },
-      { status: 413 },
+      { status: message.startsWith("Image too large") ? 413 : 502 },
     );
   } finally {
     clearTimeout(timeout);
